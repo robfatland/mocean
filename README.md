@@ -1,8 +1,21 @@
 # mocean
-my take on a simple interactive Server-driven game
+
+There are two games here. 
+
+1. A simple test game called the *Steps Game* that has five consecutive puzzles, each one on a different route. 
+2. The game **mocean** which will coordinate players and a game space for interactive play
 
 
-## Client for route game
+
+
+## Client for Steps game
+
+Start with `http://<ip>:8080/begin?message=<some_message>`. This uses route `begin` and key `message`. Once the player solves
+this first puzzle they are directed to a new route. So change the route and start over guessing the new puzzle. The game has 
+five routes. This Client code makes it fairly easy to change the route; and you can also quit playing. 
+
+
+If a sensible result doesn't come back in under a second it is 99.99999% likely the Server code isn't running. 
 
 ```
 import requests, time
@@ -19,19 +32,12 @@ while True:
               + ' milliseconds, URL = ' + urlbase + route + '?' + 'message=' + msg + '\n\n') 
 ```
 
-## todo
 
-- class
-- routes
-    - join
-    - quit
-    - move
-    - dive
+## mocean ideas
 
-## ideas
-
-- torus 600 x 800
-- lottery circles: enter them and you are transported from the game
-- server hands out positions; client only sends in impulses
-- depth level down to 16, photic zone is the top 6: 1.0, 0.83, 0.67, 0.50, 0.33, 0.17, 0.00 so range of vision drops
-- return: all features within a view radius
+- Server maintains the state but the Client exchanges are stateless
+- torus 600 x 800 with depth
+- locations are integers
+- routes: join, quit, who, chat, move, dive, grab 
+- issues: different latencies would give players an unfair advantage
+- message queue between players / broadcast
