@@ -1,10 +1,41 @@
 from bottle import request, route, run
 import json
 from math import sqrt
-from random import randint
+from random import randint, random
 
 # configure global
-players, loc, start_dim, torns, torew = [], [], 200, 600, 800
+players, loc, vel, start_dim, torns, torew = [], [], [], 600, 600, 800
+vscale = 1.0
+clight = 40.
+rttwo = math.sqrt(2.)
+piover8 = math.pi/8.
+pi3over8 = math.pi*(3./8.)
+cosp8 = math.cos(piover8)
+sinp8 = math.sin(piover8)
+cosp38 = math.cos(pi3over8)
+sinp38 = math.sin(pi3over8)
+
+impulse = [(1., 0.),             \
+           (cosp8,sinp8),        \
+           (rttwo,rttwo),        \
+           (cosp38,sinp38),      \
+           (0., 1.),             \
+           (-cosp38,sinp38),     \
+           (-rttwo,rttwo),       \
+           (-cosp8,sinp8),       \
+           (-1., 0.),            \
+           (-cosp8,-sinp8),      \
+           (-rttwo,-rttwo),      \
+           (-cosp38,-sinp38),    \
+           (0., -1.),            \
+           (cosp38,-sinp38),     \
+           (rttwo,-rttwo),       \
+           (cosp8,-sinp38)] 
+
+
+impulse_dictionary = { 'u': 0, '7': 1, '6': 2, '5': 3, '4': 4, '3': 5, '2': 6, 'q': 7, \
+                       'a': 8, 'z': 9, 'x': 10, 'c': 11, 'v': 12, 'b': 13, 'n': 14, 'j': 15 }
+
 
 @route('/mocean')
 def mocean_hello():
@@ -17,6 +48,7 @@ def mocean_hello():
     msg  += "quit     name        a-name               confirm quit                          \n"
     msg  += "who      -           -                    csv of players                        \n"
     msg  += "location name        a-name               x,y,z                                 \n"
+    msg  += "velocity name        a-name               vx,vy                                 \n"
     msg  += "move     name        a-name                                                     \n"
     msg  += "         heading     n, s, e or w         x,y,z                                 \n"
     msg  += "dive     name        a-name                                                     \n"
@@ -33,10 +65,11 @@ def join():
     try :    
         if msg in players: return 'duplicate player name not allowed to join'
         players.append(msg) 
-        loc.append((randint(0, start_dim), randint(0, start_dim), 0))
+        loc.append((random()*start_dim, random*start_dim, 0))
+        vel.append((0., 0.))
     except ValueError as ve: 
         return("player join fail")
-    return players[-1] + ',' + str(loc[-1][0]) + ',' + str(loc[-1][1]) + ',' + str(loc[-1][2])
+    return players[-1] + ',' + state(loc[-1][0], loc[-1][1], loc[-1][2])
 
 @route('/quit', method='GET')
 def quit():
@@ -59,20 +92,26 @@ def who():
 @route('/location', method='GET')
 def location(): return 'no location yet'
 
+@route('/velocity', method='GET')
+def velocity(): return 'no velocity yet'
+
 @route('/move', method='GET')
 def move():
     name      = request.GET.name.strip()
     heading   = request.GET.heading.strip()
     if not name in players: return 'move fail for unrecognized player'
     pidx = players.index(name)
-    torx, tory, torz = loc[pidx]
-    if   heading == 'n':   tory = ((tory + 1) % torns)
-    elif heading == 's':   tory = ((tory - 1) % torns)
-    elif heading == 'e':   torx = ((torx + 1) % torew)
-    elif heading == 'w':   torx = ((torx - 1) % torew)
-    else:                  return 'bad heading parse'
-    loc[pidx] = (torx, tory, torz)
-    return(state(torx, tory, torz))
+    iidx = impulse[heading]
+
+    impx  = impulse[iidx][0]; impy  = impulse[iidx][1]
+    velx += impx;             vely += impy
+    if velx > clight: velx = clight; if velx < -clight: velx = -clight; if vely > clight: vely = clight; if vely < -clight: vely = -clight
+    vel[pidx][0] = velx; vel[pidx][1] = vely
+    locx = loc[pidx][0] + vel[pidx][0]; locy = loc[pidx][1] + vel[pidx][1]
+    if locx < 0.: locx += torew; if locx >= torew: locx -= torew; if locy < 0.: locy += torns; if locy >= torns: locy -= torns
+    loc[pidx][0] = locx; loc[pidx][1] = locy
+    print(state(loc[pidx]))
+    return(state(loc[pidx]))
 
 @route('/dive', method='GET')
 def dive(): return 'no dive yet'
@@ -84,9 +123,7 @@ def message(): return 'no message yet'
 def listen(): return 'no listen yet'
 
 
-
-
-def state(x, y, z): return str(x) + ',' + str(y) + ',' + str(z)
+def state(x, y, z): return str(int(x)) + ',' + str(int(y)) + ',' + str(int(z))
 
 
 
