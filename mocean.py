@@ -1,13 +1,15 @@
 from bottle import request, route, run
 import json
 from math import sqrt
+import math
 from random import randint, random
 
 # configure global
 players, loc, vel, start_dim, torns, torew = [], [], [], 600, 600, 800
+
 vscale = 1.0
 clight = 40.
-rttwo = math.sqrt(2.)
+rttwo = sqrt(2.)
 piover8 = math.pi/8.
 pi3over8 = math.pi*(3./8.)
 cosp8 = math.cos(piover8)
@@ -103,13 +105,25 @@ def move():
     pidx = players.index(name)
     iidx = impulse[heading]
 
-    impx  = impulse[iidx][0]; impy  = impulse[iidx][1]
-    velx += impx;             vely += impy
-    if velx > clight: velx = clight; if velx < -clight: velx = -clight; if vely > clight: vely = clight; if vely < -clight: vely = -clight
-    vel[pidx][0] = velx; vel[pidx][1] = vely
-    locx = loc[pidx][0] + vel[pidx][0]; locy = loc[pidx][1] + vel[pidx][1]
-    if locx < 0.: locx += torew; if locx >= torew: locx -= torew; if locy < 0.: locy += torns; if locy >= torns: locy -= torns
-    loc[pidx][0] = locx; loc[pidx][1] = locy
+    impx  = impulse[iidx][0]; 
+    impy  = impulse[iidx][1]
+    velx += impx;             
+    vely += impy
+    if velx > clight: velx = clight; 
+    if velx < -clight: velx = -clight; 
+    if vely > clight: vely = clight; 
+    if vely < -clight: vely = -clight
+
+    vel[pidx][0] = velx; 
+    vel[pidx][1] = vely
+    locx = loc[pidx][0] + vel[pidx][0]; 
+    locy = loc[pidx][1] + vel[pidx][1]
+    if locx < 0.: locx += torew; 
+    if locx >= torew: locx -= torew; 
+    if locy < 0.: locy += torns; 
+    if locy >= torns: locy -= torns
+    loc[pidx][0] = locx; 
+    loc[pidx][1] = locy
     print(state(loc[pidx]))
     return(state(loc[pidx]))
 
