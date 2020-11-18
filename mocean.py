@@ -245,7 +245,7 @@ def isprime(n):
 # run(host='0.0.0.0', port=8080, reloader=True)
 
 
-application = bottle.defaut_app()
+application = bottle.default_app()
 
 if __name__ == '__main__':
     run(app=application, host='0.0.0.0', port=8080, reloader=True)
