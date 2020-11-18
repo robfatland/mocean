@@ -42,6 +42,9 @@ while True:
 
 ### Outline
 
+- Start up a Server (in our case a cloud instance) and ensure...
+    - It has the proper ports available on the Internet
+        - On AWS this means += Custom TCP, port PPPP, source 0.0.0.0/0
 - Make sure the Python script imports `bottle`, concludes with proper `run()` statements
 - Install `miniconda` on the Server
 - Create a Python environment
