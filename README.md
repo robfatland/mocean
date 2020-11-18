@@ -42,8 +42,7 @@ while True:
 
 ### Outline
 
-- Make sure the Python script imports `bottle`
-- Make sure the Python script concludes with the "correct" `run()` statements
+- Make sure the Python script imports `bottle`, concludes with proper `run()` statements
 - Install `miniconda` on the Server
 - Create a Python environment
 - Configure a `.service` file 
@@ -52,7 +51,7 @@ while True:
 - Use the appropriate `systemctl` commands to start and monitor the service
 - Test the service
 
-### Python Server code outline
+### Python Server code sketch
 
 ```
 import bottle
@@ -93,3 +92,135 @@ application = bottle.default_app()
 if __name__ == '__main__':
     run(app=application, host='0.0.0.0', port=8080, reloader=True)
 ```
+
+### install miniconda, ... and subsequent configuration steps ...
+
+```
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh && bash miniconda.sh -b -p $HOME/miniconda && export PATH="$HOME/miniconda/bin:$PATH" && conda config --add channels conda-forge --force
+```
+
+We are on a trajectory to use `systemd` as a manager for the service daemon. 
+
+Edit `~/.bashrc` and add a line at the end of this file if necessary: 
+
+```
+export PATH="$HOME/miniconda/bin:$PATH"
+```
+
+Save this file and run it:
+
+```
+source ~/.bashrc
+```
+
+Check that `python` is indicating a path that includes *miniconda*.
+
+```
+which python
+```
+
+should produce something like `/home/ubuntu/minconda/bin/conda`. 
+
+
+Create an environment that includes the `uwsgi` gateway interface and the bottle web framework: 
+
+```
+conda create -n mocean-env --yes bottle uwsgi
+```
+
+Activate this environment; we have two methods: 
+
+```
+conda activate mocean-env
+```
+
+or
+
+```
+source activate mocean-env
+```
+
+Test:
+
+```
+which uwsgi
+```
+
+should produce something like
+
+```
+/home/ubuntu/miniconda/envs/mocean-env/bin/uwsgi
+```
+
+Now create a `.service` file. This will reside in `/lib/systemd/system/`. Since the game is called "mocean" the file will
+be `mocean.service`. Here are the contents: 
+
+
+```
+[Unit]
+Description=Job to run the Python mocean.py Server code, in turn to parse HTTP GET API calls
+[Service]
+Type=forking
+Restart=on-failure
+RestartSec=5s
+ExecStart=/bin/bash -c '/home/ubuntu/miniconda/envs/mocean-env/bin/uwsgi --http :PPPP --wsgi-file /home/ubuntu/mocean/mocean.py --master'
+[Install]
+WantedBy=multi-user.target
+```
+
+Usually this is edited in a user directory and then copied using `sudo` to the destination, as in 
+
+```
+sudo cp /home/ubuntu/mocean/mocean.service /lib/systemd/system/mocean.service
+```
+
+The `Restart` and `RestartSec` entries in this file allow the `systemd` manager to notice the service is not working a restart it.
+The ExecStart fires up the Python code to run. In this case the Python code parses HTTP GET traffic. Notice that 
+the Python file `mocean.py` is the operative code; it does the interesting stuff. It concludes as shown above with these lines: 
+
+```
+application = bottle.default_app()
+if __name__ == '__main__': run(app=application, host='0.0.0.0', port=PPPP, reloader=True)
+```
+
+Notice I am using `PPPP` for the port number (use a real number) and I use `AAA.BBB.CCC.DDD` for the ip address (use a real
+ip address). When building this on the cloud: Note that the cloud vendor can provide a fixed ip address that you map to 
+the Server so its address never changes for the duration of a project.
+
+
+Start the service using
+
+```
+sudo systemctl start mocean
+```
+
+This may not return; you can try ctrl-z and `bg` to place it in the background. Check the status using 
+
+```
+sudo systemctl status mocean.service
+```
+
+If the process failed to start: It may be helpful to clear the decks before another attempt. Use
+
+```
+sudo systemctl daemon-reload
+```
+
+
+
+
+
+
+
+To test the service directly enter the command
+
+```
+uwsgi --http :PPPP --wsgi-file /home/ubuntu/mocean/mocean.py --master
+```
+
+
+
+
+
+
+
