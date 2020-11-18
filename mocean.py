@@ -1,3 +1,6 @@
+# added for application code version:
+import bottle
+
 from bottle import request, route, run
 import json
 from math import sqrt
@@ -238,4 +241,12 @@ def isprime(n):
         if not n % i: return False
     return True
        
-run(host='0.0.0.0', port=8080, reloader=True)
+# How to run it in casual mode...
+# run(host='0.0.0.0', port=8080, reloader=True)
+
+
+application = bottle.defaut_app()
+
+if __name__ == '__main__':
+    run(app=application, host='0.0.0.0', port=8080, reloader=True)
+
