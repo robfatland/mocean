@@ -11,7 +11,7 @@ These are Jupyter cells built in development. They are not `mocean` Clients.
 
 ```
 import requests, time
-urlbase, route = 'http://54.69.30.193:8080/', 'begin'
+urlbase, route = 'http://AAA.BBB.CCC.DDD:PPPP/', 'begin'
 while True:
     msg = input("msg to send to route '" + route + "':")
     if msg == 'exit' or msg == 'quit':  break
@@ -47,8 +47,8 @@ Here is what those six pieces are, if you are interested:
 
 
 - the string `http://` means the message is going out onto the internet
-- the ip address `54.69.30.193` is the Server's internet address
-- the addition of `:8080` is a port number. The Server listens on that port.
+- the ip address `AAA.BBB.CCC.DDD` is the Server's internet address
+- the addition of `:PPPP` uses the designated port number. The Server listens on that port.
 - the addition of `/begin` is the first puzzle game **route**. Each puzzle has an associated route.
 - the addition of `?message=` is a key. This tells the Server to get ready for your guess.
 - the addition of your guess (as a string) is the value that goes with the key
@@ -106,7 +106,7 @@ print('\nServer response: \n\n' + answer_back + '\n\n' + str(round((toc - tic)*1
 import requests
 import time
 
-def apicall(x): return requests.get('http://54.69.30.193:8080/exchange?task=' + str(x)).text
+def apicall(x): return requests.get('http://AAA.BBB.CCC.DDD:PPPP/exchange?task=' + str(x)).text
 
 tic = time.time(); check_42 = apicall(5); toc = time.time()
 
