@@ -1,14 +1,15 @@
 # mocean
 
 There are two games: **steps** and **mocean**. They use the same *ip address*. Play a game by formatting a URL to include
-the ip address, port, route, key and value. (possibly more than one of the latter two). Can use a browser but the project 
-concept is to use a Python Client. 
+the ip address, port, route, key and value. (possibly more than one of the latter two, separated by the ampersand
+character). You can use a browser as the Client but the project concept is to use a Python Client. 
 
 ## Client for steps game
 
 Start with `http://<ip>:8080/begin?message=<some_message>`. The route is `begin` and the key is `message`. 
 Iterate based on responses. Upon solving this puzzle the User is directed to a new route. Change the route and do the
-next challenge. There are five of these. Here is example Client code.
+next challenge. There are five of these. Here is example Client code.  ***Notice this fails without fixed up
+entries for ip address and port number!***
 
 ```
 import requests, time
@@ -42,19 +43,23 @@ while True:
 
 ### Outline
 
+- In what follows I use `PPPP` for the port number. Replace this with an actual port number.
 - Start up a Server (in our case a cloud instance) and ensure...
     - It has the proper ports available on the Internet
         - On AWS this means += Custom TCP, port PPPP, source 0.0.0.0/0
+    - It may use a fixed ip address (on AWS "Elastic ip"); otherwise it will be a bit of a moving target.
 - Make sure the Python script imports `bottle`, concludes with proper `run()` statements
 - Install `miniconda` on the Server
 - Create a Python environment
 - Configure a `.service` file 
-    - Add to this file proper automated restart lines
+    - Be sure to include the proper automated restart entries
         - See [this website](https://ma.ttias.be/auto-restart-crashed-service-systemd/)
 - Use the appropriate `systemctl` commands to start and monitor the service
 - Test the service
 
 ### Python Server code sketch
+
+***Notice this fails without you fix the port number!!***
 
 ```
 import bottle
@@ -89,11 +94,11 @@ def isprime(n):
         if not n % i: return False
     return True
        
-# to test/run in a casual mode use: run(host='0.0.0.0', port=8080, reloader=True)
+# to test/run in a casual mode use: run(host='0.0.0.0', port=PPPP, reloader=True)
 # to run in more robust systemd mode:
 application = bottle.default_app()
 if __name__ == '__main__':
-    run(app=application, host='0.0.0.0', port=8080, reloader=True)
+    run(app=application, host='0.0.0.0', port=PPPP, reloader=True)
 ```
 
 ### install miniconda, ... and subsequent configuration steps ...
@@ -156,7 +161,7 @@ should produce something like
 ```
 
 Now create a `.service` file. This will reside in `/lib/systemd/system/`. Since the game is called "mocean" the file will
-be `mocean.service`. Here are the contents: 
+be `mocean.service`. Here are the contents but ***notice this fails without you fix the port number!!*** 
 
 
 ```
@@ -208,11 +213,6 @@ If the process failed to start: It may be helpful to clear the decks before anot
 ```
 sudo systemctl daemon-reload
 ```
-
-
-
-
-
 
 
 To test the service directly enter the command
