@@ -89,7 +89,7 @@ To install it on a PC:
 
 ```
 import requests, time
-urlbase, route = 'http://54.69.30.193:8080/', 'begin'
+urlbase, route = 'http://AAA.BBB.CCC.DDD:PPPP/', 'begin'
 
 msg = 'hello' 
 tic = time.time()
