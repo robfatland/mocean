@@ -6,9 +6,13 @@ import json
 from math import sqrt
 import math
 from random import randint, random
+from time import time
 
 # configure global
-players, loc, vel, s0, s1, torew, torns = [], [], [], 200, 500, 900, 700
+players, loc, vel, s0, s1, torew, torns = [], [], [], 200, 500, 1000, 1000
+
+# time of last location call also matches player index
+lastloctime = []
 
 vscale = 1.0
 clight = 40.
@@ -81,6 +85,7 @@ def join():
         players.append([name, player_index]) 
         loc.append([randint(s0, s1), randint(s0, s1), 0])
         vel.append([0., 0.])
+        lastloctime.append(time())
     except ValueError as ve: 
         return("player join fail")
     return players[-1][0] + ',' + str(players[-1][1]) + ',' + state(loc[-1][0], loc[-1][1], loc[-1][2])
@@ -107,8 +112,10 @@ def who():
 def location(): 
     upbit = 0
     id = int(request.GET.id.strip())
-    loc[id][0] += vel[id][0]
-    loc[id][1] += vel[id][1]
+    dt = time() - lastloctime[id]
+    lastloctime[id] = time()
+    loc[id][0] += vel[id][0] * dt
+    loc[id][1] += vel[id][1] * dt
     if loc[id][0] < 0: loc[id][0] += torew ; upbit = 1
     if loc[id][1] < 0: loc[id][1] += torns ; upbit = 1
     if loc[id][0] >= torew: loc[id][0] -= torew ; upbit = 1
@@ -120,11 +127,12 @@ def velocity(): return 'no velocity yet'
 
 @route('/accel', method='GET')
 def accel():
+    amplify   = 10.
     id        = int(request.GET.id.strip())
     heading   = request.GET.heading.strip()
     assert len(heading) == 1, 'heading too long: ' + heading
-    vel[id][0] += impulse[heading][0]
-    vel[id][1] += impulse[heading][1]
+    vel[id][0] += impulse[heading][0] * amplify
+    vel[id][1] += impulse[heading][1] * amplify
     return state(loc[id][0], loc[id][1], loc[id][2]) + ',' + str(vel[id][0]) + ',' + str(vel[id][1])
 
     # speed of light not imposed yet
