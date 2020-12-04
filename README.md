@@ -1,15 +1,39 @@
-# mocean
+# The ***Mocean*** Python Bytes Team Project 
 
-There are two games: **steps** and **mocean**. They use the same *ip address*. Play a game by formatting a URL to include
-the ip address, port, route, key and value. (possibly more than one of the latter two, separated by the ampersand
-character). You can use a browser as the Client but the project concept is to use a Python Client. 
+This is a project designed and built for a Middle School Python club. The objective is to
+learn as much about coding in Python as possible using an online game framework as our 
+motivation. The main game is called **Mocean** and very little is known about it at this 
+point... because the students have to design it. Here is what we know so far: 
 
-## Client for steps game
+
+* The game **Mocean** is played on an ocean planet somewhere
+* The game supports multiple players
+* There is a single Server on the Internet that knows who is where
+* Each player joins and plays using their own Client
+* Clients talk to the server using a protocol; which means *communication rules*.
+
+
+## Mocean and Steps
+
+
+There are actually two games: **Steps** and **Mocean**. They use the same *ip address* and *port*. 
+Play either game by formatting a URL to include
+the ip address, port, and route. These are required. Some *routes* require an additional
+key and value; or even multiple key-value pairs. These are of the form `key=value` and they
+are separated in the URL by ampersand characters `&`. 
+
+
+You can use a browser as the Client, for example formatting you interactions by typing them in; 
+but the important concept here is to write and use a Python Client to play. 
+
+
+## Client for the Steps game
+
 
 Start with `http://<ip>:8080/begin?message=<some_message>`. The route is `begin` and the key is `message`. 
 Iterate based on responses. Upon solving this puzzle the User is directed to a new route. Change the route and do the
-next challenge. There are five of these. Here is example Client code.  ***Notice this fails without fixed up
-entries for ip address and port number!***
+next challenge. There are five of these. Here is example Client code.  ***Notice you must fix the urlbase variable
+before this code will run!!***
 
 ```
 import requests, time
@@ -30,76 +54,37 @@ while True:
               + ' milliseconds, URL = ' + urlbase + route + '?' + 'message=' + msg + '\n\n') 
 ```
 
-## mocean ideas
+## Mocean ideas
 
-- Server maintains the state but the Client exchanges are stateless
-- torus 600 x 800 with depth
-- locations are integers
-- routes: join, quit, who, chat, move, dive, grab 
-- issues: different latencies would give players an unfair advantage
-- message queue between players / broadcast
+- routes: join, quit, who, sendchat, popchat, ---navigation---
+- issues: handling different latencies... and polling status bits
 
 ## Server configuration
 
-### Outline
+### Some notes
 
-- In what follows I use `PPPP` for the port number. Replace this with an actual port number.
+- In what follows I use `PPPP` for the port number. Replace this with 8080.
 - Start up a Server (in our case a cloud instance) and ensure...
     - It has the proper ports available on the Internet
-        - On AWS this means += Custom TCP, port PPPP, source 0.0.0.0/0
+        - On AWS console this means += Custom TCP, port PPPP, source 0.0.0.0/0
     - It may use a fixed ip address (on AWS "Elastic ip"); otherwise it will be a bit of a moving target.
 - Make sure the Python script imports `bottle`, concludes with proper `run()` statements
 - Install `miniconda` on the Server
-- Create a Python environment
+- Create a Python environment (I used `mocean-dev`)
 - Configure a `.service` file 
     - Be sure to include the proper automated restart entries
         - See [this website](https://ma.ttias.be/auto-restart-crashed-service-systemd/)
 - Use the appropriate `systemctl` commands to start and monitor the service
-- Test the service
+    - `systemctl start`
+    - `systemctl stop`
+    - `systemctl restart` after modifying the server code does a refresh
+    - `systemctl status mocean` 
 
 ### Python Server code sketch
 
 ***Notice this fails without you fix the port number!!***
 
-```
-import bottle
-from bottle import request, route, run
-import json
-# more imports here...
-
-# using a decorator to match a route to a callback. This one has no key-value requirement
-@route('/mocean')
-def mocean_hello():
-    msg   = "be there swells, let's go a-whalin"
-    return(msg)
-
-# A more involved route + callback
-@route('/begin', method='GET')
-def steps_game_part_1():
-    msg = request.GET.message.strip()
-    try :  vfloat = float(msg) 
-    except : return('you are on the right route, "begin", but your message is not numerical enough for me!!!')
-    v = int(vfloat)
-    if v < 0: return('ah good, you are getting warm... i like numbers but this one is a bit negative :( ')
-    if v == 0: return("nice message... but it a bit small don't you think?")
-    if not float(v) == vfloat: return('actually I need an integer, and ' + str(vfloat) + ' has digits after the decimal point...')
-    if not isprime(v): return('your message is positive but not prime enough')
-    if v <= 100: return("your message is prime! Make it a bit bigger, like over the century mark, and you're there")
-    return "congrats, you solved it!!! A prime greater than 100. The next step: Begin again, this time using the route 'beguine'"
-
-def isprime(n):
-    if n == 2: return True
-    if n < 2 or not n % 2: return False
-    for i in range(3, int(sqrt(n))+1, 2): 
-        if not n % i: return False
-    return True
-       
-# to test/run in a casual mode use: run(host='0.0.0.0', port=PPPP, reloader=True)
-# to run in more robust systemd mode:
-application = bottle.default_app()
-if __name__ == '__main__':
-    run(app=application, host='0.0.0.0', port=PPPP, reloader=True)
-```
+See file `mocean.py`.
 
 ### install miniconda, ... and subsequent configuration steps ...
 
@@ -163,26 +148,36 @@ should produce something like
 Now create a `.service` file. This will reside in `/lib/systemd/system/`. Since the game is called "mocean" the file will
 be `mocean.service`. Here are the contents but ***notice this fails without you fix the port number!!*** 
 
+The service file is `mocean.service` in this repo. Do not clobber the existing service file with a 
+modification as it could break the VM. Rather use `systemctl stop` and then make the switch before
+restarting.
 
-```
-[Unit]
-Description=Job to run the Python mocean.py Server code, in turn to parse HTTP GET API calls
-[Service]
-Type=forking
-Restart=on-failure
-RestartSec=5s
-ExecStart=/bin/bash -c '/home/ubuntu/miniconda/envs/mocean-env/bin/uwsgi --http :PPPP --wsgi-file /home/ubuntu/mocean/mocean.py --master'
-[Install]
-WantedBy=multi-user.target
-```
 
-Usually this is edited in a user directory and then copied using `sudo` to the destination, as in 
+In more detail: Edit the new `mocean.service` in a user directory, then stop the service, then copy using `sudo`:
 
 ```
 sudo cp /home/ubuntu/mocean/mocean.service /lib/systemd/system/mocean.service
 ```
 
-The `Restart` and `RestartSec` entries in this file allow the `systemd` manager to notice the service is not working a restart it.
+That is for Ubuntu. Then restart the service.
+
+### Service file parameters
+
+
+#### Bug
+
+I currently experience timeout/restarts every five minutes or so. It was worse but I include this line in the `[Service]` 
+segment of the `.service` file: 
+
+```
+TimeoutSec=7200
+```
+
+This does not give me 2 hours of operation... just five minutes up from one minute. So an open problem to resolve.
+
+#### Service file further notes
+
+The `Restart` and `RestartSec` entries in this file allow the `systemd` manager to notice the service is not working and restart it.
 The ExecStart fires up the Python code to run. In this case the Python code parses HTTP GET traffic. Notice that 
 the Python file `mocean.py` is the operative code; it does the interesting stuff. It concludes as shown above with these lines: 
 
@@ -191,8 +186,7 @@ application = bottle.default_app()
 if __name__ == '__main__': run(app=application, host='0.0.0.0', port=PPPP, reloader=True)
 ```
 
-Notice I am using `PPPP` for the port number (use a real number) and I use `AAA.BBB.CCC.DDD` for the ip address (use a real
-ip address). When building this on the cloud: Note that the cloud vendor can provide a fixed ip address that you map to 
+When building this on the cloud: Note that the cloud vendor can provide a fixed ip address that you map to 
 the Server so its address never changes for the duration of a project.
 
 
