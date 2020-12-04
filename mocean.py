@@ -1,3 +1,43 @@
+# Left off with the PC Client not able to do popchat/sendchat
+#
+# Overview
+#   To debug directly use `conda activate mocean-dev` to make the miniconda install of bottle 
+#     available. Use sudo systemctl restart mocean to restart the service.
+#
+#   tuples being immutable I will stay dynamic by using lists
+#     players[] is a list of strings. The index matches loc[] and vel[]
+#     loc[] is [x, y, z]
+#     vel[] is [vx, vy]
+# 
+# ideas
+#   Server Operation
+#   time out is a major issue; it resets the game every minute or two...
+#     although maybe not for the Python Client
+#   where print statements and other diagnostics go... is another big deal
+#   it would be helpful to notice a start time; 
+#     create a route called uptime returning 'since...'
+# 
+#   Players
+#   expire after one hour?
+#   who: lists only active players (not dead spots) 
+#   quit: name collapses to '' and that is the only indication
+#
+#   Chat routes
+#   Only two routes to begin with
+#   Only one message held at a time
+#   route popchat returns string 'sender: msg'
+#   route sendchat returns string '1' or '0' 
+# 
+#   Broadcast routes
+#   broadcast route
+#
+#   State
+#   Create a state file that can be reloaded and then rewritten; and periodically updated
+#   Clients can periodically check 'am  I in the game?' 
+#     If not: There could be an assert route to reintroduce them 
+#       This is a bad fix to the timeout issue
+
+
 # added for application code version:
 import bottle
 
@@ -6,9 +46,16 @@ import json
 from math import sqrt
 import math
 from random import randint, random
+from time import time
 
 # configure global
-players, loc, vel, start_dim, torns, torew = [], [], [], 600, 600, 800
+players, loc, vel, s0, s1, torns, torew = [], [], [], 200, 500, 1000, 1000
+
+# for DMs
+chat = []
+
+# time of last location call also matching to player index
+lastloctime = []
 
 vscale = 1.0
 clight = 40.
@@ -20,133 +67,167 @@ sinp8 = math.sin(piover8)
 cosp38 = math.cos(pi3over8)
 sinp38 = math.sin(pi3over8)
 
-impulse = [(1., 0.),             \
-           (cosp8,sinp8),        \
-           (rttwo,rttwo),        \
-           (cosp38,sinp38),      \
-           (0., 1.),             \
-           (-cosp38,sinp38),     \
-           (-rttwo,rttwo),       \
-           (-cosp8,sinp8),       \
-           (-1., 0.),            \
-           (-cosp8,-sinp8),      \
-           (-rttwo,-rttwo),      \
-           (-cosp38,-sinp38),    \
-           (0., -1.),            \
-           (cosp38,-sinp38),     \
-           (rttwo,-rttwo),       \
-           (cosp8,-sinp38)] 
+# ice-rink-style velocity changes
+#   u is east, 4 = north, q west, c south
+impulse = {'u': (1., 0.),             \
+           '7': (cosp8,sinp8),        \
+           '6': (rttwo,rttwo),        \
+           '5': (cosp38,sinp38),      \
+           '4': (0., 1.),             \
+           '3': (-cosp38,sinp38),     \
+           '2': (-rttwo,rttwo),       \
+           'q': (-cosp8,sinp8),       \
+           'a': (-1., 0.),            \
+           'z': (-cosp8,-sinp8),      \
+           'x': (-rttwo,-rttwo),      \
+           'c': (-cosp38,-sinp38),    \
+           'v': (0., -1.),            \
+           'b': (cosp38,-sinp38),     \
+           'n': (rttwo,-rttwo),       \
+           'j': (cosp8,-sinp38)}
 
 
-impulse_dictionary = { 'u': 0, '7': 1, '6': 2, '5': 3, '4': 4, '3': 5, '2': 6, 'q': 7, \
-                       'a': 8, 'z': 9, 'x': 10, 'c': 11, 'v': 12, 'b': 13, 'n': 14, 'j': 15 }
-
-
-@route('/mocean')
+@route('/mocean', method='GET')
 def mocean_hello():
-    msg   = "be there swells, let's go a-whalin                                              \n"
-    msg  += "                                                                                \n"
-    msg  += "route    key         value                returns                               \n"
-    msg  += "=====    ===         =====                =======                               \n"
-    msg  += "mocean   -           -                    this usage message                    \n"
-    msg  += "join     name        a-name               x,y,z                                 \n"
-    msg  += "quit     name        a-name               confirm quit                          \n"
-    msg  += "who      -           -                    csv of players                        \n"
-    msg  += "location name        a-name               x,y,z                                 \n"
-    msg  += "velocity name        a-name               vx,vy                                 \n"
-    msg  += "move     name        a-name                                                     \n"
-    msg  += "         heading     n, s, e or w         x,y,z                                 \n"
-    msg  += "dive     name        a-name                                                     \n"
-    msg  += "         direction   u or d               x,y,z                                 \n"
-    msg  += "msg      name        all or a-name           ...                                \n"
-    msg  += "         message     message                 ... confirm msg on queue           \n"
-    msg  += "listen   name        all or a-name        '' or message at top of queue         \n"
-    msg  += "                                                                                \n"
+
+    client_type = request.GET.client.strip()
+    if client_type == 'browser': closeout = '<br>'
+    else:                        closeout = '\n'
+    
+    msg   = "if thar be swells, lead on MacDuff                                   " + closeout
+    msg  += "                                                                     " + closeout
+    msg  += "route    key         value                returns                    " + closeout
+    msg  += "=====    ===         =====                =======                    " + closeout
+    msg  += "mocean   -           -                    this message               " + closeout
+    msg  += "join     name        namestring           id                         " + closeout
+    msg  += "quit     name        namestring           confirm message            " + closeout
+    msg  += "who      -           -                    csv of players             " + closeout
+    msg  += "sendchat id          sender id                                       " + closeout
+    msg  += "         name        name of recipient                               " + closeout
+    msg  += "         message     the message to send  '1' or '0' (success/fail)  " + closeout
+    msg  += "popchat  id          my id                message if there is one    " + closeout
+    msg  += "                                          '0' if there is no message " + closeout
+    msg  += "                                                                     " + closeout
+
     return(msg)
+
 
 @route('/join', method='GET')
 def join():
-    msg = request.GET.name.strip()
+    candidate_name = request.GET.name.strip()
     try :    
-        if msg in players: return 'duplicate player name not allowed to join'
-        players.append(msg) 
-        loc.append((random()*start_dim, random*start_dim, 0))
-        vel.append((0., 0.))
+        print('possible player name = ', candidate_name)
+        if candidate_name in players: return 'join fail on duplicate player name'
+        players.append(candidate_name) 
+        loc.append([randint(s0, s1), randint(s0, s1), 0])
+        vel.append([0., 0.])
+        lastloctime.append(time())
+        chat.append('')
     except ValueError as ve: 
         return("player join fail")
-    return players[-1] + ',' + state(loc[-1][0], loc[-1][1], loc[-1][2])
+    return str(players.index(candidate_name))           # will be this players id
+
 
 @route('/quit', method='GET')
 def quit():
-    msg_string = request.GET.name.strip()
-    print("                     quit:", msg_string)
-    if not msg_string in players:
-        return("quit fail for non-existent player")
-    try: 
-        player_index = players.index(msg_string)
-        del players[player_index]; del loc[player_index]
+    candidate_quit = request.GET.name.strip()
+    print("                     quit:", candidate_quit)
+    if not candidate_quit in players: 
+        return 'quit fail for unlisted player'
+    try : 
+        player_index = players.index(candidate_quit)
+        players[player_index] = ''
     except : return("quit fail")
-    return ("you have left the toroidal mocean")
+    return (candidate_quit + " left the toroidal mocean")
+
 
 @route('/who', method='GET')
 def who(): 
-    rmsg = 'players: '
-    for name in players: rmsg += name + ' '
-    return rmsg
+    lead_msg = 'there are '
+    names_msg = ''
+    nplayers = 0
+    for name in players:           # each name is a 2-element list
+      if len(name) > 0:
+        nplayers += 1
+        names_msg += name + ' '
+    if nplayers == 0: return lead_msg + '0 players'
+    return lead_msg + str(nplayers) + ' players: ' + names_msg
+
+
+############################
+############################
+##
+## Chat / Broadcast 
+##
+############################
+############################
+
+@route('/sendchat', method='GET')
+def sendchat():
+    id        = int(request.GET.id.strip())
+    recipient = request.GET.name.strip()
+    message   = request.GET.message.strip()
+    if id < 0: return '0'
+    if id >= len(players): return '0'
+    if not len(players[id]): return '0'
+    if not recipient in players: return '0'
+    if not len(message): return '0'
+    recip_id = players.index(recipient)
+    if len(chat[recip_id]): return '0'
+    try : 
+        chat[recip_id] = players[id] + ': ' + message
+        return '1'
+    except : return('0')
+    return '0'
+
+@route('/popchat', method='GET')
+def popchat():
+    id        = int(request.GET.id.strip())
+    if id < 0: return '0'
+    if id >= len(players): return '0'
+    if not len(players[id]): return '0'
+    if not len(chat[id]): return '0'
+    try : 
+        return_message = chat[id]
+        chat[id] = ''
+        return return_message
+    except : return('0')
+    return '0'
+
+############################
+############################
+##
+## Spatial / Dynamical
+##
+############################
+############################
 
 @route('/location', method='GET')
-def location(): return 'no location yet'
+def location():
+    upbit = 0
+    id = int(request.GET.id.strip())
+    dt = time() - lastloctime[id]
+    lastloctime[id] = time()
+    loc[id][0] += vel[id][0] * dt
+    loc[id][1] += vel[id][1] * dt
+    if loc[id][0] < 0: loc[id][0] += torew ; upbit = 1
+    if loc[id][1] < 0: loc[id][1] += torns ; upbit = 1
+    if loc[id][0] >= torew: loc[id][0] -= torew ; upbit = 1
+    if loc[id][1] >= torns: loc[id][1] -= torns ; upbit = 1
+    return state(loc[id][0], loc[id][1], loc[id][2]) + ',' + str(upbit)
 
 @route('/velocity', method='GET')
 def velocity(): return 'no velocity yet'
 
-@route('/move', method='GET')
-def move():
-    name      = request.GET.name.strip()
+@route('/accel', method='GET')
+def accel():
+    amplify   = 10.
+    id        = int(request.GET.id.strip())
     heading   = request.GET.heading.strip()
-    if not name in players: return 'move fail for unrecognized player'
-    pidx = players.index(name)
-    iidx = impulse[heading]
-
-    impx  = impulse[iidx][0]; 
-    impy  = impulse[iidx][1]
-    velx += impx;             
-    vely += impy
-    if velx > clight: velx = clight; 
-    if velx < -clight: velx = -clight; 
-    if vely > clight: vely = clight; 
-    if vely < -clight: vely = -clight
-
-    vel[pidx][0] = velx; 
-    vel[pidx][1] = vely
-    locx = loc[pidx][0] + vel[pidx][0]; 
-    locy = loc[pidx][1] + vel[pidx][1]
-    if locx < 0.: locx += torew; 
-    if locx >= torew: locx -= torew; 
-    if locy < 0.: locy += torns; 
-    if locy >= torns: locy -= torns
-    loc[pidx][0] = locx; 
-    loc[pidx][1] = locy
-    print(state(loc[pidx]))
-    return(state(loc[pidx]))
-
-@route('/dive', method='GET')
-def dive(): return 'no dive yet'
-
-@route('/message', method='GET')
-def message(): return 'no message yet'
-
-@route('/listen', method='GET')
-def listen(): return 'no listen yet'
-
-
-def state(x, y, z): return str(int(x)) + ',' + str(int(y)) + ',' + str(int(z))
-
-
-
-
-
-
+    assert len(heading) == 1, 'heading too long: ' + heading
+    vel[id][0] += impulse[heading][0] * amplify
+    vel[id][1] += impulse[heading][1] * amplify
+    return state(loc[id][0], loc[id][1], loc[id][2]) + ',' + str(vel[id][0]) + ',' + str(vel[id][1])
 
 
 #####################################################
@@ -159,7 +240,7 @@ def state(x, y, z): return str(int(x)) + ',' + str(int(y)) + ',' + str(int(z))
 
 
 @route('/hello')
-def hello(): return 'be swell and have two or three 3.14is'
+def hello(): return 'be a swell and have some 3.14'
 
 
 ################## begin ########################

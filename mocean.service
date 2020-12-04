@@ -5,5 +5,6 @@ Type=forking
 Restart=on-failure
 RestartSec=5s
 ExecStart=/bin/bash -c '/home/ubuntu/miniconda/envs/mocean-env/bin/uwsgi --http :PPPP --wsgi-file /home/ubuntu/mocean/mocean.py --master'
+TimeoutSec=7200
 [Install]
 WantedBy=multi-user.target
