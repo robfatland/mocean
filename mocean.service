@@ -4,7 +4,7 @@ Description=Job to run the Python mocean.py Server code, in turn to parse HTTP G
 Type=forking
 Restart=on-failure
 RestartSec=5s
-ExecStart=/bin/bash -c '/home/ubuntu/miniconda/envs/mocean-env/bin/uwsgi --http :PPPP --wsgi-file /home/ubuntu/mocean/mocean.py --master'
+ExecStart=/bin/bash -c '/home/ubuntu/miniconda/envs/mocean-env/bin/uwsgi --http :8080 --wsgi-file /home/ubuntu/mocean/mocean.py --master'
 TimeoutSec=7200
 [Install]
 WantedBy=multi-user.target
