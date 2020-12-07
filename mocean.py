@@ -1,36 +1,38 @@
 # Overview
-#   To debug the server code via direct execution (i.e. avoiding systemd)
-#     - sudo systemctl stop mocean
-#     - wait for the process to halt; use status mocean to confirm
-#     - conda activate mocean-env 
-#     - this makes the miniconda install with bottle available
-#     - to get back to the systemd version:
-#       - sudo systemctl restart mocean 
+#   There are two ways to run the Mocean Server: Directly and using the systemd daemon controller.
+#     - For normal operation (which will restart the Server if it stops): Use systemd
+#       - THIS CURRENTLY HAS A MAJOR BUG AND RESTARTS EVERY 5 MINUTES
+#       - sudo systemctl start mocean
+#       - After editing mocean.py: sudo systemctl restart mocean 
+#       - Clear the decks: sudo systemctl daemon-reload
+#       - Debugging info: journalctl -xe 
+#     - For development / testing use direct execution
+#       - sudo systemctl stop mocean
+#         - wait for the process to halt; use sudo systemctl status mocean
+#       - check the bottle/mocean environment is available: conda info --envs
+#       - conda activate mocean-env 
+#       - python mocean.py
+#         - notice the 'run' at the end of the file also works for a systemd service
 #
-#   execution notes
-#   tuples being immutable: stay dynamic using lists
-#   overhead of execution time should be tested... assume it is negligible but verify
-#   players[] is a list of strings. When a player quits the entry is set to ''
-#   state lists use the same index for a given player
-#       loc[] entries are lists: [x, y, z]
-#       vel[] entries are lists: [vx, vy]
-#       
-# 
-# ideas
-#   Server Operation
-#   timeout (after 5 mins?) is the main problem
-#   where do diagnostics go so we can read them?
-#   it would be helpful to notice a start time; 
-#     create a route called uptime returning 'since...'
-# 
-#   Players
-#   expire after one hour?
-#   quit: name collapses to '' the only indication
+# Notes
+#   tuples being immutable: this code uses lists for player status
+#     A joined player has an index or id that they use to self-identify
+#       This certainly permits spoofing :)
+#     Data include
+#       players[]:  a list of strings. Quit player has namestring set to ''
+#       loc[] list of coordinate lists: [x, y, z]
+#       vel[] list of velocity lists: [vx, vy]
+#       chat[]: a list of strings: chat messages, one per player
+#       lastloctime[]: a list of time-of-last-location request
+#         ...used to calculate new position according to distance = speed x time
 #
-#   State
-#   Could create a state file that can be reloaded and then rewritten; periodically updated
-#   Clients can periodically check 'am  I in the game?' 
-#     If not: There could be an assert route to reintroduce them 
+# Needed
+#   overhead of execution timing: At what point does it impact gameplay? 
+#   debugging needs improvement... where do diagnostics go to examine?
+#   Mocean Server "on since" would be good once the big bug is fixed
+#   Occasionally save status / reload on start?
+#   Players expire after one hour?
+#
 
 
 # added for application code version:
@@ -45,58 +47,89 @@ from time import time
 
 # configure global
 players, loc, vel, chat, lastloctime = [], [], [], [], []
-torns, torew = 1000, 1000
+torns, torew = 900, 900
 startcoord_range_lo = 200
 startcoord_range_hi = 500
 
-hullspeed = 8.
+hullspeed = 30.
 minspeed = 0.33
-slowfactor = 0.8
-fastfactor = 1.05
-veerangle = math.pi/10.
-
-# original 16-thruster approach used keys 234567ujnbvcxzaq
-# current approach uses w to accelerate, s to decelerate, 
-#   a and d to change heading
-
+slowfactor = 0.7
+fastfactor = 1.25
+veerangle = math.pi/12.
 
 @route('/mocean', method='GET')
 def mocean_hello():
 
+    m = ""
     client_type = request.GET.client.strip()
-    if client_type == 'browser': closeout = '<br>'
-    else:                        closeout = '\n'
-    
-    msg   = "  yarrrr if thar be swells, lead on MacBeth                           " + closeout
-    msg  += "                                                                      " + closeout
-    msg  += "route     key         value                returns                    " + closeout
-    msg  += "=====     ===         =====                =======                    " + closeout
-    msg  += "mocean    -           -                    this message               " + closeout
-    msg  += "join      name        namestring           id                         " + closeout
-    msg  += "quit      name        namestring           confirm message            " + closeout
-    msg  += "who       -           -                    csv of players             " + closeout
-#     msg  += "look      -           -                    list of nearby itemnames   " + closeout
-#     msg  += "get       id          my id                                           " + closeout
-#     msg  += "          item        itemname             result flag '1' or '0'     " + closeout
-#     msg  += "inventory id          my id                list what i have           " + closeout
-#     msg  += "use       id          my id                                           " + closeout
-#     msg  += "          item        itemname             result of this action      " + closeout
-    msg  += "sendchat  id          sender id                                       " + closeout
-    msg  += "          name        name of recipient                               " + closeout
-    msg  += "          message     the message to send  '1' or '0' (success/fail)  " + closeout
-    msg  += "popchat   id          my id                message if there is one    " + closeout
-    msg  += "                                           '0' if there is no message " + closeout
-    msg  += "location  id          my id                x y z f0 f1                " + closeout
-    msg  += "                                             xyz is player location   " + closeout
-    msg  += "                                             f0 = wrap flag           " + closeout
-    msg  += "                                             f1 = message flag        " + closeout
-    msg  += "velocity  id          my id                vx vy                      " + closeout
-    msg  += "accel     id          my id                                           " + closeout
-    msg  += "          ctrl        'w' 'a' 's' or 'd'   x y z vx vy                " + closeout
-    msg  += "                                             xyz is player location   " + closeout
-    msg  += "                                             vx vy is player velocity " + closeout
 
-    return(msg)
+    if client_type == 'browser': 
+        eol = '<br>'
+        m += "<!DOCTYPE HTML>"
+        m += "<html>"
+        m += "<head>"
+        m += "<title>Welcome to the Toroidal Mocean!</title>"
+        m += "</head>"
+        m += "<body>"
+        m += "<div>"
+        m += "<tt>"
+        m += "<PRE>"
+
+    else:
+        eol = '\n'
+    
+    m  += "  Yarr Swells, lead on!         hullspeed is " + str(hullspeed)           + eol
+    m  += "                                                                        " + eol
+    m  += "route       key         value                return (string)            " + eol
+    m  += "=========   =========   ==================   =====================      " + eol
+    m  += "                                                                        " + eol
+    m  += "BASIC INTERACTIONS                                                      " + eol
+    m  += "mocean      -           -                    this message               " + eol
+    m  += "                                                                        " + eol
+    m  += "join        name        namestring           id                         " + eol
+    m  += "                                                                        " + eol
+    m  += "quit        name        namestring           confirm message            " + eol
+    m  += "                                                                        " + eol
+    m  += "who         -           -                    csv of players             " + eol
+    m  += "                                                                        " + eol
+#     m  += "look        -           -                    list of nearby itemnames   " + eol
+#     m  += "get         id          my id                                           " + eol
+#     m  += "            item        itemname             result flag '1' or '0'     " + eol
+#     m  += "inventory   id          my id                list what i have           " + eol
+#     m  += "use         id          my id                                           " + eol
+#     m  += "            item        itemname             result of this action      " + eol
+    m  += "                                                                        " + eol
+    m  += "COMMUNICATE                                                             " + eol
+    m  += "sendchat    id          sender id                                       " + eol
+    m  += "            name        name of recipient                               " + eol
+    m  += "            message     the message to send  '1' or '0' (success/fail)  " + eol
+    m  += "popchat     id          my id                message if there is one    " + eol
+    m  += "                                             '0' if there is no message " + eol
+    m  += "                                                                        " + eol
+    m  += "NAVIGATE                                                                " + eol
+    m  += "location    id          my id                x,y,z,f0,f1                " + eol
+    m  += "                                               x,y,z = location, depth  " + eol
+    m  += "                                               f0 = wrap flag           " + eol
+    m  += "                                               f1 = message flag        " + eol
+    m  += "                                                                        " + eol
+    m  += "velocity    id          my id                vx,vy = velocity           " + eol
+    m  += "                                                                        " + eol
+    m  += "accel       id          my id                                           " + eol
+    m  += "            ctrl        one of: w a s d      x,y,z,vx,vy                " + eol
+    m  += "                                                                        " + eol
+    m  += "teleport    id          my id                                           " + eol
+    m  += "            x           destination x                                   " + eol
+    m  += "            y           destination y        x,y,z                      " + eol
+    m  += "                                                                        " + eol
+    m  += "                                                                        " + eol
+
+    if client_type == 'browser': 
+        m += "</PRE>"
+        m += "</div>"
+        m += "</body>"
+        m += "</html>"
+
+    return(m)
 
 
 @route('/join', method='GET')
@@ -261,11 +294,24 @@ def accel():
     else: veer(id, 'left') if ctrl == 'a' else veer(id, 'right')
     return locationstring(id) + ',' + velocitystring(id)
 
+@route('/teleport', method='GET')
+def teleport():
+    tic = time()
+    id  = int(request.GET.id.strip())
+    x   = float(request.GET.x.strip())
+    y   = float(request.GET.y.strip())
+    if x > 0. and x < torew and y > 0. and y < torns:
+        loc[id] = [x, y, 0.]
+        dt = time() - tic
+        return locationstring(id) + ',' + str(dt*1000.)
+    return '0'
+
+
 
 #####################################################
 #####################################################
 ####
-####   STEPS game and utilities
+####   STEPS game and related utilities
 ####
 #####################################################
 #####################################################
