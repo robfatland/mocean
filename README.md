@@ -71,6 +71,7 @@ while True:
 - Make sure the Python script imports `bottle`, concludes with proper `run()` statements
 - Install `miniconda` on the Server
 - Create a Python environment (I used `mocean-dev`)
+    - See section below on creating this environment
 - Configure a `.service` file 
     - Be sure to include the proper automated restart entries
         - See [this website](https://ma.ttias.be/auto-restart-crashed-service-systemd/)
