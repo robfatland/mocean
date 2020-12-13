@@ -1,10 +1,12 @@
 [Unit]
 Description=Job to run the Python mocean.py Server code, in turn to parse HTTP GET API calls
+
 [Service]
 Type=forking
 Restart=on-failure
 RestartSec=5s
-ExecStart=/bin/bash -c '/home/ubuntu/miniconda/envs/mocean-env/bin/uwsgi --http :8080 --wsgi-file /home/ubuntu/mocean/mocean.py --master'
 TimeoutSec=7200
+ExecStart=/bin/bash -c '/home/ubuntu/miniconda/envs/mocean-env/bin/uwsgi --http :8080 --http-timeout 7200 --harakiri 7200 --socket-timeout 7200 --wsgi-file /home/ubuntu/mocean/mocean.py --master'
+
 [Install]
 WantedBy=multi-user.target

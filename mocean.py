@@ -1,39 +1,17 @@
-# Overview
-#   There are two ways to run the Mocean Server: Directly and using the systemd daemon controller.
-#     - For normal operation (which will restart the Server if it stops): Use systemd
-#       - THIS CURRENTLY HAS A MAJOR BUG AND RESTARTS EVERY 5 MINUTES
-#       - sudo systemctl start mocean
-#       - After editing mocean.py: sudo systemctl restart mocean 
-#       - Clear the decks: sudo systemctl daemon-reload
-#       - Debugging info: journalctl -xe 
-#     - For development / testing use direct execution
-#       - sudo systemctl stop mocean
-#         - wait for the process to halt; use sudo systemctl status mocean
-#       - check the bottle/mocean environment is available: conda info --envs
-#       - conda activate mocean-env 
-#       - python mocean.py
-#         - notice the 'run' at the end of the file also works for a systemd service
+# Two ways to run Mocean Server: sudo systemctl start mocean and python mocean    
+#   - 'restart' after mod mocean.py; clear: daemon-reload; journalctl -xe diagnostics
+#   - use 'stop' before switching to option 2, status to verify 
+#     - bottle/uwsgi environment is mocean-env: conda info --envs
+#     - conda activate mocean-env; and note 'run' at end of mocean.py works both
 #
-# Notes
-#   tuples being immutable: this code uses lists for player status
-#     A joined player has an index or id that they use to self-identify
-#       This certainly permits spoofing :)
-#     Data include
-#       players[]:  a list of strings. Quit player has namestring set to ''
-#       loc[] list of coordinate lists: [x, y, z]
-#       vel[] list of velocity lists: [vx, vy]
-#       chat[]: a list of strings: chat messages, one per player
-#       lastloctime[]: a list of time-of-last-location request
+# Lists (not tuples) for state variables (mutable)
+#   Joined player has a name and index (spoofing possible!) 
+#     players[]:  a list of strings. Quit player has namestring set to ''
+#     loc[] list of coordinate lists: [x, y, z]
+#     vel[] list of velocity lists: [vx, vy]
+#     chat[]: a list of strings: chat messages, one per player
+#     lastloctime[]: a list of time-of-last-location request
 #         ...used to calculate new position according to distance = speed x time
-#
-# Needed
-#   overhead of execution timing: At what point does it impact gameplay? 
-#   debugging needs improvement... where do diagnostics go to examine?
-#   Mocean Server "on since" would be good once the big bug is fixed
-#   Occasionally save status / reload on start?
-#   Players expire after one hour?
-#
-
 
 # added for application code version:
 import bottle
@@ -127,7 +105,7 @@ def mocean_hello():
     else:
         eol = '\n'
     
-    m  += "  Hi Ridhi, lead on!         hullspeed " + str(hullspeed)                        + eol
+    m  += "  v2 prototype try 2         hullspeed " + str(hullspeed)                        + eol
     m  += "    Unless noted: failed routes return 0, successful routes return 1              " + eol
     m  += "                                                                                  " + eol
     m  += "route            key         value                     return string              " + eol
@@ -143,11 +121,11 @@ def mocean_hello():
     m  += "                                                                                  " + eol
     m  += "quit             name        namestring                                           " + eol
     m  += "                                                                                  " + eol
-    m  += "who              -           -                         csv of players             " + eol
+    m  += "who              -           -                         lists players in game      " + eol
     m  += "                                                                                  " + eol
-    m  += "name             id          my id                     list of nearby things      " + eol
+    m  += "name             id          my id                     gives the name from the id " + eol
     m  += "                                                                                  " + eol
-    m  += "id               name        namestring                list of nearby things      " + eol
+    m  += "id               name        namestring                gives the id from the name " + eol
     m  += "                                                                                  " + eol
     m  += "look             id          my id                     list of nearby things:     " + eol
     m  += "                                                         thing,x,y,z,             " + eol
@@ -200,6 +178,12 @@ def mocean_hello():
 def idok(id):
     if id < 0 or id >= len(players) or len(players[id]) == 0: return False
     return True
+
+def viewshed(id):
+    retval = viewshedbase - loc[id][2]
+    if retval < 5: retval = 5
+    return retval
+
 
 ####################
 #
@@ -268,16 +252,15 @@ def look():
     id = int(request.GET.id.strip())
     if not idok(id): return '0'
     nearbystring = ''
-    viewshed = viewshedbase - loc[id][2]
-    if viewshed < 5.: viewshed = 5.
+    theviewshed = viewshed(id)
     for whale in whales:
-        if proximity(loc[id][0], loc[id][1], loc[id][2], whale[0], whale[1], whale[2]) < viewshed:
+        if proximity(loc[id][0], loc[id][1], loc[id][2], whale[0], whale[1], whale[2]) < theviewshed:
             nearbystring += 'whale,'
             nearbystring += str(whale[0]) + ','
             nearbystring += str(whale[1]) + ','
             nearbystring += str(whale[2]) + ','
     for treasure in treasures:
-        if proximity(loc[id][0], loc[id][1], loc[id][2], treasure[0], treasure[1], treasure[2]) < viewshed:
+        if proximity(loc[id][0], loc[id][1], loc[id][2], treasure[0], treasure[1], treasure[2]) < theviewshed:
             nearbystring += 'treasure,'
             nearbystring += str(treasure[0]) + ','
             nearbystring += str(treasure[1]) + ','
@@ -392,7 +375,20 @@ def location():
     if loc[id][0] >= torew: loc[id][0] -= torew ; wrapflag = 1
     if loc[id][1] >= torns: loc[id][1] -= torns ; wrapflag = 1
     msgflag = 0 if not len(chat[id]) else 1
-    nearbyflag = 0 # not built yet
+
+    # nearbyflag is intended to reduce the number of 'look' routes
+    nearbyflag = 0 
+    theviewshed = viewshed(id)
+    for treasure in treasures:
+        if proximity(loc[id][0], loc[id][1], loc[id][2], treasure[0], treasure[1], treasure[2]) < theviewshed: 
+            nearbyflag = 1
+            break
+    if not nearbyflag: 
+        for whale in whales:
+            if proximity(loc[id][0], loc[id][1], loc[id][2], whale[0], whale[1], whale[2]) < theviewshed: 
+                nearbyflag = 1
+                break
+
     return locationstring(id) + ',' + str(wrapflag) + ',' + str(msgflag) + ',' + str(nearbyflag)
 
 @route('/velocity', method='GET')
@@ -431,16 +427,16 @@ def teleport():
 def dive():
     id  = int(request.GET.id.strip())
     if not idok(id): return '0'
-    ctrl = request.GET.id.strip()
+    ctrl = request.GET.ctrl.strip()
     if ctrl != 'r' and ctrl != 'f': return '0'
     if playerspeed(id) > 0: return '0'
     mydepth = loc[id][2]
     if ctrl == 'r':
-        mydepth -= 5. 
+        mydepth -= deltadive
         if mydepth < 0.: mydepth = 0.
     else:
         seafloordepth = bathymetry(loc[id][0], loc[id][1])
-        mydepth += 5.
+        mydepth += deltadive
         if mydepth > seafloordepth: mydepth = seafloordepth
     loc[id][2] = mydepth
     return locationstring(id)
