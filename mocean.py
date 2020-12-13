@@ -1,4 +1,4 @@
-version_message = 'v2 try 4 or so, fladorpkin'
+version_message = 'v2 try 5, smaque!'
 
 # Two ways to run Mocean Server: sudo systemctl start mocean and python mocean    
 #   - 'restart' after mod mocean.py; clear: daemon-reload; journalctl -xe diagnostics
@@ -15,10 +15,6 @@ version_message = 'v2 try 4 or so, fladorpkin'
 #     lastloctime[]: a list of time-of-last-location request
 #         ...used to calculate new position according to distance = speed x time
 #
-# I think sendchat() will set the sender's speed to zero.
-# This is an arbitrary constraint but it solves a threading problem without threads.
-# I also need labels for my treasures.
-# I also need names for my whales.
 
 # added for application code version:
 import bottle
@@ -31,16 +27,17 @@ from random import randint, random
 from time import time
 
 # configure global
-players, loc, vel, chat, lastloctime, maxspeed = [], [], [], [], [], []
+players, loc, vel, chat, lastloctime, maxspeed, playerinventory = [], [], [], [], [], [], []
 torns, torew = 900, 900
 startcoord_range_lo = 40
 startcoord_range_hi = 90
 
-hullspeed = 24.
+hullspeed = 40.
 minspeed = 0.33
-slowfactor = 0.7
-fastfactor = 1.25
-veerangle = math.pi/14.
+slowfactor = 0.6
+fastfactor = 1.45
+veerangle = math.pi/12.
+grabradius = 30.
 
 # vertical parameters
 deltadive = 5.
@@ -55,8 +52,8 @@ seamounts = [[randint(smx0, smx1), randint(smy0, smy1), sigma0 + random()*sigma1
 
 # trench defined as five contiguous rectangles
 tr = []
-tr.append([230, 260, 310, 315])
-tr.append([260, 266, 310, 360])
+tr.append([140, 260, 290, 315])
+tr.append([260, 266, 290, 360])
 tr.append([260, 330, 360, 365])
 tr.append([330, 338, 360, 450])
 tr.append([330, 410, 450, 455])
@@ -89,6 +86,19 @@ def bathymetry(x, y):
 
 whales    = [[randint(0, torew - 1), randint(0, torns - 1), 0] for i in range(nWhales)]
 treasures = [[seamounts[i][0], seamounts[i][1], bathymetry(seamounts[i][0], seamounts[i][1])] for i in range(len(seamounts))]
+
+treasures[0].append('palantir')                      # see whales and players
+treasures[1].append('spare air')                     # stay down longer
+treasures[2].append('iron dust')                     # plankton bloom
+treasures[3].append('sharp knife')                   # cut away ocean garbage from whale
+treasures[4].append('map')                           # see bathymetry and treasure
+treasures[5].append('bathysphere ALVIN')             # dive into trench
+treasures[6].append('bathysphere JASON')             # dive into trench
+treasures[7].append('bathysphere ROPOS')             # dive into trench
+treasures[8].append('bag of donuts')                 # snack
+treasures[9].append('800 pieces of eight')
+treasures[10].append('8800 pieces of eight')
+treasures[11].append('88000 pieces of eight')
 
 @route('/mocean', method='GET')
 def mocean_hello():
@@ -136,6 +146,12 @@ def mocean_hello():
     m  += "                                                                                  " + eol
     m  += "look             id          my id                     list of nearby things:     " + eol
     m  += "                                                         thing,x,y,z,             " + eol
+    m  += "                                                                                  " + eol
+    m  += "get              id          my id                     grabs a nearby treasure    " + eol
+    m  += "                                                         use inventory to see     " + eol
+    m  += "                                                                                  " + eol
+    m  += "inventory        id          my id                     list of what i have        " + eol
+    m  += "                                                                                  " + eol
     m  += "COMMUNICATE                                                                       " + eol
     m  += "sendchat         id          sender id                                            " + eol
     m  += "                 name        name of recipient                                    " + eol
@@ -217,6 +233,7 @@ def join():
         lastloctime.append(time())
         maxspeed.append(hullspeed)
         chat.append('')
+        playerinventory.append(['air tank', 1.])           
     except ValueError as ve: return '0'
     return str(players.index(candidate_name))           
 
@@ -272,7 +289,7 @@ def look():
             nearbystring += str(whale[1]) + ','
             nearbystring += str(whale[2]) + ','
     for treasure in treasures:
-        if proximity(id, treasure) < theviewshed:
+        if myproximity(id, treasure) < theviewshed:
             nearbystring += 'treasure,'
             nearbystring += str(treasure[0]) + ','
             nearbystring += str(treasure[1]) + ','
@@ -281,11 +298,22 @@ def look():
 
 @route('/get', method='GET')
 def get(): 
-  return 'get not implemented yet'
+    id = int(request.GET.id.strip())
+    if not idok(id): return '0'
+    for treasure in treasures:
+        if myproximity(id, treasure) < grabradius:
+            treasure_index = treasures.index(treasure)
+            playerinventory[id].append(treasure[3])
+            del(treasures[treasure_index])
+            print('diag: treasures = ' + str(treasures))
+            print('diag: player got treasure, their inv = ' + str(playerinventory[id]))
+    return 
 
 @route('/inventory', method='GET')
 def inventory(): 
-  return 'inventory not implemented yet'
+    id = int(request.GET.id.strip())
+    if not idok(id): return '0'
+    return str(playerinventory[id])
 
 @route('/use', method='GET')
 def give(): 
@@ -397,12 +425,12 @@ def location():
     nearbyflag = 0 
     theviewshed = viewshed(id)
     for treasure in treasures:
-        if proximity(id, treasure) < theviewshed: 
+        if myproximity(id, treasure) < theviewshed: 
             nearbyflag = 1
             break
     if not nearbyflag: 
         for whale in whales:
-            if proximity(id, whale) < theviewshed: 
+            if myproximity(id, whale) < theviewshed: 
                 nearbyflag = 1
                 break
 
