@@ -1,3 +1,5 @@
+version_message = 'v2 try 4 or so, fladorpkin'
+
 # Two ways to run Mocean Server: sudo systemctl start mocean and python mocean    
 #   - 'restart' after mod mocean.py; clear: daemon-reload; journalctl -xe diagnostics
 #   - use 'stop' before switching to option 2, status to verify 
@@ -12,6 +14,11 @@
 #     chat[]: a list of strings: chat messages, one per player
 #     lastloctime[]: a list of time-of-last-location request
 #         ...used to calculate new position according to distance = speed x time
+#
+# I think sendchat() will set the sender's speed to zero.
+# This is an arbitrary constraint but it solves a threading problem without threads.
+# I also need labels for my treasures.
+# I also need names for my whales.
 
 # added for application code version:
 import bottle
@@ -79,7 +86,6 @@ def bathymetry(x, y):
               break
     return depth
     
-def proximity(x, y, z, u, v, w): return sqrt((x-u)**2 + (y-v)**2 + (z-w)**2)
 
 whales    = [[randint(0, torew - 1), randint(0, torns - 1), 0] for i in range(nWhales)]
 treasures = [[seamounts[i][0], seamounts[i][1], bathymetry(seamounts[i][0], seamounts[i][1])] for i in range(len(seamounts))]
@@ -105,7 +111,8 @@ def mocean_hello():
     else:
         eol = '\n'
     
-    m  += "  v2 prototype try 2         hullspeed " + str(hullspeed)                        + eol
+    m  += version_message + eol
+    m  += "                             hullspeed " + str(hullspeed)                        + eol
     m  += "    Unless noted: failed routes return 0, successful routes return 1              " + eol
     m  += "                                                                                  " + eol
     m  += "route            key         value                     return string              " + eol
@@ -132,7 +139,7 @@ def mocean_hello():
     m  += "COMMUNICATE                                                                       " + eol
     m  += "sendchat         id          sender id                                            " + eol
     m  += "                 name        name of recipient                                    " + eol
-    m  += "                 message     the message to send                                  " + eol
+    m  += "                 message     the message to send       also sets speed to zero    " + eol
     m  += "                                                                                  " + eol
     m  += "popchat          id          my id                     message if there is one    " + eol
     m  += "                                                       '0' if no message          " + eol
@@ -183,6 +190,11 @@ def viewshed(id):
     retval = viewshedbase - loc[id][2]
     if retval < 5: retval = 5
     return retval
+
+def proximity(x, y, z, u, v, w): return sqrt((x-u)**2 + (y-v)**2 + (z-w)**2)
+
+def myproximity(id, thing): 
+    return proximity(loc[id][0], loc[id][1], loc[id][2], thing[0], thing[1], thing[2])
 
 
 ####################
@@ -254,13 +266,13 @@ def look():
     nearbystring = ''
     theviewshed = viewshed(id)
     for whale in whales:
-        if proximity(loc[id][0], loc[id][1], loc[id][2], whale[0], whale[1], whale[2]) < theviewshed:
+        if myproximity(id, whale) < theviewshed:
             nearbystring += 'whale,'
             nearbystring += str(whale[0]) + ','
             nearbystring += str(whale[1]) + ','
             nearbystring += str(whale[2]) + ','
     for treasure in treasures:
-        if proximity(loc[id][0], loc[id][1], loc[id][2], treasure[0], treasure[1], treasure[2]) < theviewshed:
+        if proximity(id, treasure) < theviewshed:
             nearbystring += 'treasure,'
             nearbystring += str(treasure[0]) + ','
             nearbystring += str(treasure[1]) + ','
@@ -290,6 +302,9 @@ def give():
 def sendchat():
     id = int(request.GET.id.strip())
     if not idok(id): return '0'
+    vel[id] = [0., 0.]                        # sendchat stops the player
+                                              # this freezes you while you type out the message
+                                              # and it runs whether or not you include the other args
     recipient = request.GET.name.strip()
     if not recipient in players: return '0'
     message   = request.GET.message.strip()
@@ -374,18 +389,20 @@ def location():
     if loc[id][1] < 0:      loc[id][1] += torns ; wrapflag = 1
     if loc[id][0] >= torew: loc[id][0] -= torew ; wrapflag = 1
     if loc[id][1] >= torns: loc[id][1] -= torns ; wrapflag = 1
+
+    # access the message with the popchat route
     msgflag = 0 if not len(chat[id]) else 1
 
     # nearbyflag is intended to reduce the number of 'look' routes
     nearbyflag = 0 
     theviewshed = viewshed(id)
     for treasure in treasures:
-        if proximity(loc[id][0], loc[id][1], loc[id][2], treasure[0], treasure[1], treasure[2]) < theviewshed: 
+        if proximity(id, treasure) < theviewshed: 
             nearbyflag = 1
             break
     if not nearbyflag: 
         for whale in whales:
-            if proximity(loc[id][0], loc[id][1], loc[id][2], whale[0], whale[1], whale[2]) < theviewshed: 
+            if proximity(id, whale) < theviewshed: 
                 nearbyflag = 1
                 break
 
