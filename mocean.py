@@ -1,8 +1,4 @@
-version_message = 'v2 try 5, smaque!'
-
-# Two ways to run Mocean Server: sudo systemctl start mocean and python mocean    
-#   - 'restart' after mod mocean.py; clear: daemon-reload; journalctl -xe diagnostics
-#   - use 'stop' before switching to option 2, status to verify 
+# Two ways to run Mocean Server: sudo systemctl and python (see alias file)
 #     - bottle/uwsgi environment is mocean-env: conda info --envs
 #     - conda activate mocean-env; and note 'run' at end of mocean.py works both
 #
@@ -16,6 +12,8 @@ version_message = 'v2 try 5, smaque!'
 #         ...used to calculate new position according to distance = speed x time
 #
 
+version_string = "V3.14 Boom Edition "
+
 # added for application code version:
 import bottle
 
@@ -26,11 +24,12 @@ import math
 from random import randint, random
 from time import time
 
+
 # configure global
 players, loc, vel, chat, lastloctime, maxspeed, playerinventory = [], [], [], [], [], [], []
 torns, torew = 900, 900
 startcoord_range_lo = 40
-startcoord_range_hi = 90
+startcoord_range_hi = 200
 
 hullspeed = 40.
 minspeed = 0.33
@@ -50,7 +49,7 @@ smx0, smx1, smy0, smy1 = 60, torew - 60 - 1, 60, torns - 60 - 1
 sigma0, sigma1, amp0, amp1 = 10., 30., 10, 15.
 seamounts = [[randint(smx0, smx1), randint(smy0, smy1), sigma0 + random()*sigma1, amp0 + random()*amp1] for i in range(nSeamounts)]
 
-# trench defined as five contiguous rectangles
+# the trench is defined as five contiguous rectangles
 tr = []
 tr.append([140, 260, 290, 315])
 tr.append([260, 266, 290, 360])
@@ -59,20 +58,30 @@ tr.append([330, 338, 360, 450])
 tr.append([330, 410, 450, 455])
 
 viewshedbase = 50.
-nWhales = 17
-nTreasures = nSeamounts
+
+###################
+#
+# utility functions
+#
+###################
+
 
 def calcseamount(i, x, y):
+    '''for a given location calculate the height of seamount[i]'''
     r = sqrt((x - seamounts[i][0])**2 + (y - seamounts[i][1])**2)
     if r > 3.*seamounts[i][2]: return 0.
     return seamounts[i][3]*exp(-.5*(r/seamounts[i][2])**2)
 
+
 def intrench(x, y):
+    '''bool for whether a location is in the trench or not'''
     for i in range(len(tr)): 
         if x > tr[i][0] and x < tr[i][1] and y > tr[i][2] and y < tr[i][3]: return True
     return False
 
+
 def bathymetry(x, y): 
+    '''for a location return the seafloor depth as floating point positive meters'''
     if intrench(x, y): depth = trenchdepth
     else: 
         depth = basedepth
@@ -82,7 +91,117 @@ def bathymetry(x, y):
               depth = 0. 
               break
     return depth
+
+
+def idok(id):
+    '''boolean integer id value corresponds to a player'''
+    id_int = int(id)
+    if id_int < 0 or id_int >= len(players) or len(players[id_int]) == 0: return False
+    return True
+
+
+def viewshed(id):
+    '''determine how far a player can see based on their depth'''
+    retval = viewshedbase - loc[id][2]
+    if retval < 5: retval = 5
+    return retval
+
+
+def proximity(x, y, z, u, v, w): 
+    '''determine distance between two 3D points using coordinates'''
+    return sqrt((x-u)**2 + (y-v)**2 + (z-w)**2)
+
+
+def myproximity(id, thing): 
+    '''determine distance between a player (from id) and a thing'''
+    id_int = int(id)
+    return proximity(loc[id_int][0], loc[id_int][1], loc[id_int][2], thing[0], thing[1], thing[2])
+
+
+def locationstring(id):    
+    '''convert a player x y z location to a comma-separated string'''
+    id_int = int(id)
+    return str(loc[id_int][0]) + ',' + str(loc[id_int][1]) + ',' + str(loc[id_int][2])
+
+
+def velocitystring(id):    
+    '''convert a player vx vy velocity to a comma-separated string'''
+    id_int = int(id)
+    return str(vel[id_int][0]) + ',' + str(vel[id_int][1])
+
+
+def playerspeed(id):       
+    '''return player speed as a floating point value'''
+    id_int = int(id)
+    return sqrt(vel[id_int][0]**2 + vel[id_int][1]**2)
+
+
+def playerspeedstring(id): 
+    '''return player speed as a string'''
+    id_int = int(id)
+    return str(playerspeed(id_int))
+
+
+def ctrlok(ctrl):
+    '''boolean: accel control is valid'''
+    if ctrl == 'w' or ctrl == 's' or ctrl == 'a' or ctrl == 'd': return True
+    return False
+
+
+def tapbreaks(id): 
+    '''slow down the player (or if they are slow already: stop them)'''
+    id_int = int(id)
+    if playerspeed(id_int) < minspeed: 
+        vel[id_int] = [0., 0.]
+        return True
+    vel[id_int] = [slowfactor * vel[id_int][0], slowfactor * vel[id_int][1]]
+    return True
+
+
+def gofaster(id): 
+    '''speed the player up by fastfactor, up to the players maximum speed'''
+    id_int = int(id)
+    the_speed = playerspeed(id_int)
+    if the_speed > maxspeed[id_int]: return True
+    if the_speed == 0.: 
+        vel[id_int] = [1., 0.]
+        return True
+    vel[id_int] = [fastfactor * vel[id_int][0], fastfactor * vel[id_int][1]]
+    return True
+
+def veer(id, direction):
+    '''veer off left or right corresponding to a / d controls'''
+    id_int = int(id)
+    the_speed = playerspeed(id_int)
+    if the_speed == 0.: return True
+    heading = math.atan2(vel[id_int][1], vel[id_int][0])
+    if direction == 'left': heading += veerangle
+    else:                   heading -= veerangle
+    vel[id_int] = [the_speed*math.cos(heading),the_speed*math.sin(heading)]
+    return True
+
+def genfibo(n):
+    if n < 3: n = 3
+    if n > 30: n = 30
+    fibo = [0, 1]
+    for i in range(2, n): fibo.append(fibo[-1] + fibo[-2])
+    return fibo
     
+def isprime(n):
+    if n == 2: return True
+    if n < 2 or not n % 2: return False
+    for i in range(3, int(sqrt(n))+1, 2): 
+        if not n % i: return False
+    return True
+
+###################
+#
+# set up the "things" (whales and treasures) in the world
+#
+###################
+
+nWhales = 17
+nTreasures = nSeamounts
 
 whales    = [[randint(0, torew - 1), randint(0, torns - 1), 0] for i in range(nWhales)]
 treasures = [[seamounts[i][0], seamounts[i][1], bathymetry(seamounts[i][0], seamounts[i][1])] for i in range(len(seamounts))]
@@ -100,11 +219,24 @@ treasures[9].append('800 pieces of eight')
 treasures[10].append('8800 pieces of eight')
 treasures[11].append('88000 pieces of eight')
 
+#####################
+#
+# The mocean usage route
+#
+#####################
+
+version_message = version_string + '   using a browser: include client=browser. Make this brief: Use usage=brief'
+world_message   = 'ocean is ' + str(torew) + ' by ' + str(torns) + ' and hullspeed is ' + str(hullspeed)
+
 @route('/mocean', method='GET')
-def mocean_hello():
+def mocean():
 
     m = ""
     client_type = request.GET.client.strip()
+    usage_type  = request.GET.usage.strip()
+
+    print('usage_type:')
+    print(usage_type)
 
     if client_type == 'browser': 
         eol = '<br>'
@@ -122,67 +254,94 @@ def mocean_hello():
         eol = '\n'
     
     m  += version_message + eol
-    m  += "                             hullspeed " + str(hullspeed)                        + eol
-    m  += "    Unless noted: failed routes return 0, successful routes return 1              " + eol
-    m  += "                                                                                  " + eol
-    m  += "route            key         value                     return string              " + eol
-    m  += "=========        =========   ==================        =====================      " + eol
-    m  += "                                                                                  " + eol
-    m  += "BASIC ACTIONS                                                                     " + eol
-    m  += "mocean           -           -                         this message               " + eol
-    m  += "                                                         (from a browser: add on  " + eol
-    m  += "                                                          '?client=browser' for   " + eol
-    m  += "                                                          a better printout)      " + eol
-    m  += "                                                                                  " + eol
-    m  += "join             name        namestring                id                         " + eol
-    m  += "                                                                                  " + eol
-    m  += "quit             name        namestring                                           " + eol
-    m  += "                                                                                  " + eol
-    m  += "who              -           -                         lists players in game      " + eol
-    m  += "                                                                                  " + eol
-    m  += "name             id          my id                     gives the name from the id " + eol
-    m  += "                                                                                  " + eol
-    m  += "id               name        namestring                gives the id from the name " + eol
-    m  += "                                                                                  " + eol
-    m  += "look             id          my id                     list of nearby things:     " + eol
-    m  += "                                                         thing,x,y,z,             " + eol
-    m  += "                                                                                  " + eol
-    m  += "get              id          my id                     grabs a nearby treasure    " + eol
-    m  += "                                                         use inventory to see     " + eol
-    m  += "                                                                                  " + eol
-    m  += "inventory        id          my id                     list of what i have        " + eol
-    m  += "                                                                                  " + eol
-    m  += "COMMUNICATE                                                                       " + eol
-    m  += "sendchat         id          sender id                                            " + eol
-    m  += "                 name        name of recipient                                    " + eol
-    m  += "                 message     the message to send       also sets speed to zero    " + eol
-    m  += "                                                                                  " + eol
-    m  += "popchat          id          my id                     message if there is one    " + eol
-    m  += "                                                       '0' if no message          " + eol
-    m  += "                                                                                  " + eol
-    m  += "NAVIGATE                                                                          " + eol
-    m  += "location         id          my id                     x,y,z,f0,f1,f2             " + eol
-    m  += "                                                         x,y,z = location, depth  " + eol
-    m  += "                                                         f0 = wrap flag           " + eol
-    m  += "                                                         f1 = message flag        " + eol
-    m  += "                                                         f2 = nearby flag         " + eol
-    m  += "                                                                                  " + eol
-    m  += "velocity         id          my id                     vx,vy = velocity           " + eol
-    m  += "                                                                                  " + eol
-    m  += "accel            id          my id                                                " + eol
-    m  += "                 ctrl        one of: w a s d           x,y,z,vx,vy (loc, vel)     " + eol
-    m  += "                                                                                  " + eol
-    m  += "dive             id          my id                                                " + eol
-    m  += "                 ctrl        one of: r f               r = rise, f = down         " + eol
-    m  += "                                                       x,y,z,vx,vy (loc, vel)     " + eol
-    m  += "                                                                                  " + eol
-    m  += "teleport         id          my id                                                " + eol
-    m  += "                 x           destination x                                        " + eol
-    m  += "                 y           destination y             x,y,z (location)           " + eol
-    m  += "                                                                                  " + eol
-    m  += "ping             id          my id                     depth in +meters to bottom " + eol
-    m  += "                                                                                  " + eol
-    m  += "                                                                                  " + eol
+    m  += world_message + eol
+
+    if usage_type == 'brief':
+
+        print('start of brief interior')
+
+        m  += "mocean       append ?client=browser to get HTML back, otherwise text     " + eol
+        m  += "join         name      --> id or '-1' on fail                            " + eol
+        m  += "quit         name      --> '1' on success and '0' on fail                " + eol
+        m  += "who                    --> there are 2 players: fred wilma               " + eol
+        m  += "name         id        --> name of player with this id                   " + eol
+        m  += "id           name      --> id of player with this name                   " + eol
+        m  += "look         id        --> what you see, where it is: thing,x,y,z        " + eol
+        m  += "get          id            used to grab a treasure                       " + eol
+        m  += "inventory    id        --> list of what i have                           " + eol
+        m  += "sendchat     id, name, message                                           " + eol
+        m  += "popchat      id        --> the message for me if there is one (or '0')   " + eol
+        m  += "location     id        --> x, y, z, wrap flag, message flag, nearby flag " + eol
+        m  += "velocity     id        --> vx, vy as my velocity                         " + eol
+        m  += "accel        id, ctrl: use w faster s slower a left d right              " + eol
+        m  += "dive         id, ctrl: use r to rise and f to go deeper                  " + eol
+        m  += "teleport     id, x, y: teleport to new location                          " + eol
+        m  += "ping         id        --> depth in +meters to sea floor where i am      " + eol
+
+        print('end of brief interior')
+        print(m)
+
+    else: 
+        m  += "    Unless noted: a FAIL returns string 0, SUCCESS returns 1                      " + eol
+        m  += "                                                                                  " + eol
+        m  += "route            key         value                     return string              " + eol
+        m  += "=========        =========   ==================        =====================      " + eol
+        m  += "                                                                                  " + eol
+        m  += "BASIC ACTIONS                                                                     " + eol
+        m  += "mocean           -           -                         this message               " + eol
+        m  += "                                                         (from a browser: add on  " + eol
+        m  += "                                                          '?client=browser' for   " + eol
+        m  += "                                                          a better printout)      " + eol
+        m  += "                                                                                  " + eol
+        m  += "join             name        letters + numbers only    id string                  " + eol
+        m  += "                                                                                  " + eol
+        m  += "quit             name        namestring                                           " + eol
+        m  += "                                                                                  " + eol
+        m  += "who              -           -                         lists players in game      " + eol
+        m  += "                                                                                  " + eol
+        m  += "name             id          my id                     gives the name from the id " + eol
+        m  += "                                                                                  " + eol
+        m  += "id               name        namestring                gives the id from the name " + eol
+        m  += "                                                                                  " + eol
+        m  += "look             id          my id                     list of nearby things:     " + eol
+        m  += "                                                         thing,x,y,z,             " + eol
+        m  += "                                                                                  " + eol
+        m  += "get              id          my id                     grabs a nearby treasure    " + eol
+        m  += "                                                         use inventory to see     " + eol
+        m  += "                                                                                  " + eol
+        m  += "inventory        id          my id                     list of what i have        " + eol
+        m  += "                                                                                  " + eol
+        m  += "COMMUNICATE                                                                       " + eol
+        m  += "sendchat         id          sender id                                            " + eol
+        m  += "                 name        name of recipient                                    " + eol
+        m  += "                 message     the message to send       also sets speed to zero    " + eol
+        m  += "                                                                                  " + eol
+        m  += "popchat          id          my id                     message if there is one    " + eol
+        m  += "                                                       '0' if no message          " + eol
+        m  += "                                                                                  " + eol
+        m  += "NAVIGATE                                                                          " + eol
+        m  += "location         id          my id                     x,y,z,f0,f1,f2             " + eol
+        m  += "                                                         x,y,z = location, depth  " + eol
+        m  += "                                                         f0 = wrap flag           " + eol
+        m  += "                                                         f1 = message flag        " + eol
+        m  += "                                                         f2 = nearby flag         " + eol
+        m  += "                                                                                  " + eol
+        m  += "velocity         id          my id                     vx,vy = velocity           " + eol
+        m  += "                                                                                  " + eol
+        m  += "accel            id          my id                                                " + eol
+        m  += "                 ctrl        one of: w a s d           x,y,z,vx,vy (loc, vel)     " + eol
+        m  += "                                                                                  " + eol
+        m  += "dive             id          my id                                                " + eol
+        m  += "                 ctrl        one of: r f               r = rise, f = down         " + eol
+        m  += "                                                       x,y,z,vx,vy (loc, vel)     " + eol
+        m  += "                                                                                  " + eol
+        m  += "teleport         id          my id                                                " + eol
+        m  += "                 x           destination x                                        " + eol
+        m  += "                 y           destination y             x,y,z (location)           " + eol
+        m  += "                                                                                  " + eol
+        m  += "ping             id          my id                     depth in +meters to bottom " + eol
+        m  += "                                                                                  " + eol
+        m  += "                                                                                  " + eol
 
     if client_type == 'browser': 
         m += "</PRE>"
@@ -191,26 +350,6 @@ def mocean_hello():
         m += "</html>"
 
     return(m)
-
-####################
-# 
-# utility functions
-# 
-####################
-
-def idok(id):
-    if id < 0 or id >= len(players) or len(players[id]) == 0: return False
-    return True
-
-def viewshed(id):
-    retval = viewshedbase - loc[id][2]
-    if retval < 5: retval = 5
-    return retval
-
-def proximity(x, y, z, u, v, w): return sqrt((x-u)**2 + (y-v)**2 + (z-w)**2)
-
-def myproximity(id, thing): 
-    return proximity(loc[id][0], loc[id][1], loc[id][2], thing[0], thing[1], thing[2])
 
 
 ####################
@@ -222,6 +361,9 @@ def myproximity(id, thing):
 @route('/join', method='GET')
 def join():
     candidate_name = request.GET.name.strip()
+    print(candidate_name)
+    if not candidate_name.isalnum():
+        return '0'
     try :    
         print('possible player name = ', candidate_name)
         if candidate_name in players: return '0'
@@ -262,6 +404,7 @@ def who():
         names_msg += name + ' '
     return lead_msg + str(nplayers) + ' players: ' + names_msg
 
+
 @route('/name', method='GET')
 def name(): 
     id = int(request.GET.id.strip())
@@ -269,11 +412,13 @@ def name():
     if len(players[id]): return players[id]
     return '0'
 
+
 @route('/id', method='GET')
 def id(): 
-    name = int(request.GET.name.strip())
-    if name in players: return str(players.index(name))           
-    return '0'
+    name = request.GET.name.strip()
+    if name in players: 
+        return str(players.index(name))           
+    return '-1'
 
 
 @route('/look', method='GET')
@@ -296,6 +441,7 @@ def look():
             nearbystring += str(treasure[2]) + ','
     return nearbystring
 
+
 @route('/get', method='GET')
 def get(): 
     id = int(request.GET.id.strip())
@@ -309,11 +455,13 @@ def get():
             print('diag: player got treasure, their inv = ' + str(playerinventory[id]))
     return 
 
+
 @route('/inventory', method='GET')
 def inventory(): 
     id = int(request.GET.id.strip())
     if not idok(id): return '0'
     return str(playerinventory[id])
+
 
 @route('/use', method='GET')
 def give(): 
@@ -322,7 +470,7 @@ def give():
 
 ############################
 #
-# routes: chat, broadcast
+# communication routes
 #
 ############################
 
@@ -346,6 +494,7 @@ def sendchat():
     except : return '0' 
     return '0'
 
+
 @route('/popchat', method='GET')
 def popchat():
     id        = int(request.GET.id.strip())
@@ -358,51 +507,13 @@ def popchat():
     except : return '0' 
     return '0'
 
+
 ############################
 #
-# Spatial / Dynamical
+# spatial routes
 #
 ############################
 
-def locationstring(id):    return str(loc[id][0]) + ',' + str(loc[id][1]) + ',' + str(loc[id][2])
-def velocitystring(id):    return str(vel[id][0]) + ',' + str(vel[id][1])
-def playerspeed(id):       return sqrt(vel[id][0]**2 + vel[id][1]**2)
-def playerspeedstring(id): return str(playerspeed(id))
-
-###############
-#
-# acceleration controls
-#
-###############
-
-def ctrlok(ctrl):
-    if ctrl == 'w' or ctrl == 's' or ctrl == 'a' or ctrl == 'd': return True
-    return False
-
-def tapbreaks(id): 
-    if playerspeed(id) < minspeed: 
-        vel[id] = [0., 0.]
-        return True
-    vel[id] = [slowfactor * vel[id][0], slowfactor * vel[id][1]]
-    return True
-
-def gofaster(id): 
-    the_speed = playerspeed(id)
-    if the_speed > maxspeed[id]: return True
-    if the_speed == 0.: 
-        vel[id] = [1., 0.]
-        return True
-    vel[id] = [fastfactor * vel[id][0], fastfactor * vel[id][1]]
-    return True
-
-def veer(id, direction):
-    the_speed = playerspeed(id)
-    if the_speed == 0.: return True
-    heading = math.atan2(vel[id][1], vel[id][0])
-    if direction == 'left': heading += veerangle
-    else:                   heading -= veerangle
-    vel[id] = [the_speed*math.cos(heading),the_speed*math.sin(heading)]
-    return True
 
 @route('/location', method='GET')
 def location():
@@ -575,20 +686,6 @@ def steps_game_part_5():
     if not il == sl: return ("Six items is correct; but I need the six numbers in row six of the Pascale triangle, separated by commas.")
     return('Well done!! You have completed the Steps game. Tell Rob this on Slack!!!')
 
-def genfibo(n):
-    if n < 3: n = 3
-    if n > 30: n = 30
-    fibo = [0, 1]
-    for i in range(2, n): fibo.append(fibo[-1] + fibo[-2])
-    return fibo
-    
-def isprime(n):
-    if n == 2: return True
-    if n < 2 or not n % 2: return False
-    for i in range(3, int(sqrt(n))+1, 2): 
-        if not n % i: return False
-    return True
-       
 # How to run it in casual mode...
 # run(host='0.0.0.0', port=8080, reloader=True)
 
