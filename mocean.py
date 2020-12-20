@@ -11,8 +11,28 @@
 #     lastloctime[]: a list of time-of-last-location request
 #         ...used to calculate new position according to distance = speed x time
 #
+# notes
+# ids are immediately converted to integers here for use as index into player stats
+# teleport only if portkey in playerinventory
+# check all return values: strings
+# there are unnamed whales and seamounts
+# need to get the iron mechanism going
+# all playerinventory items are lists that begin with the type of the item, then the specific name, then other metadata
+#   ['air tank', 'air tank', 1.] so [2] is how much air remains
+#   ['treasure', name of treasure]
+#   ['whale', name of whale]
+#   need more route info outside of the mocean basics
+#   need to ensure teleport does not work unless you have the portkey
+#
+# need to test whalename, treasurename and use()
+# need a stop function to set velocity to zero
+# need to document stuff I did not expect
+#   use of plankton_bloom as a global state variable in a route fn required a global dec
+#   use of a list of lists required [[]] for the initialization of air tank
+# 
+# funny sonar cavitation idea: If speed > max / 2 or something: return random noise for depth
 
-version_string = "V3.14 Boom Edition "
+version_string = "V3.14 Boom Edition ...1"
 
 # added for application code version:
 import bottle
@@ -25,13 +45,16 @@ from random import randint, random
 from time import time
 
 
-# configure global
-players, loc, vel, chat, lastloctime, maxspeed, playerinventory = [], [], [], [], [], [], []
+# configure global state values
+players, loc, vel, chat, lastloctime = [], [], [], [], []
+maxspeed, playerinventory, whalerider = [], [], []
 torns, torew = 900, 900
 startcoord_range_lo = 40
 startcoord_range_hi = 200
+plankton_bloom = False
 
 hullspeed = 40.
+whalespeed = 80.
 minspeed = 0.33
 slowfactor = 0.6
 fastfactor = 1.45
@@ -204,20 +227,51 @@ nWhales = 17
 nTreasures = nSeamounts
 
 whales    = [[randint(0, torew - 1), randint(0, torns - 1), 0] for i in range(nWhales)]
+whales[0].append('Anisha')
+whales[1].append('Stephen Jay Gould')
+whales[2].append('Debbie')
+whales[3].append('Herman Melville')
+whales[4].append('Ishmael')
+whales[5].append('Charles Darwin')
+whales[6].append('William Wang')
+whales[7].append('Paul Erdos')
+whales[8].append('George Of The Jungle')
+whales[9].append('Simone de Beauvoir')
+whales[10].append('Alex Honnold')
+whales[11].append('Marvin Gaye')
+whales[12].append('Bill Watterson')
+whales[13].append('James Earl Jones')
+whales[14].append('Richard Alley')
+whales[15].append('Naomi Oreskes')
+whales[16].append('Yayoi Kusama')
+
 treasures = [[seamounts[i][0], seamounts[i][1], bathymetry(seamounts[i][0], seamounts[i][1])] for i in range(len(seamounts))]
 
-treasures[0].append('palantir')                      # see whales and players
-treasures[1].append('spare air')                     # stay down longer
-treasures[2].append('iron dust')                     # plankton bloom
-treasures[3].append('sharp knife')                   # cut away ocean garbage from whale
-treasures[4].append('map')                           # see bathymetry and treasure
-treasures[5].append('bathysphere ALVIN')             # dive into trench
-treasures[6].append('bathysphere JASON')             # dive into trench
-treasures[7].append('bathysphere ROPOS')             # dive into trench
-treasures[8].append('bag of donuts')                 # snack
-treasures[9].append('800 pieces of eight')
-treasures[10].append('8800 pieces of eight')
-treasures[11].append('88000 pieces of eight')
+treasures[0].append('palantir')
+treasures[1].append('spare air')
+treasures[2].append('JSON ROV')
+treasures[3].append('ALVIN submarine')
+treasures[4].append('map')
+treasures[5].append('teleport crystal')
+treasures[6].append('chrono-synclastic infundibulum')
+treasures[7].append('binoculars')
+treasures[8].append('ham and cheese sandwich')
+treasures[9].append('iron dust')
+treasures[10].append('iron dust')
+treasures[11].append('iron dust')
+
+seamounts[0].append('Mount Crumpet')                 
+seamounts[1].append('Axial Seamount')                     
+seamounts[2].append('Meru Prastarah')                     
+seamounts[3].append('Krakatoa')                       
+seamounts[4].append('Atlantis')                           
+seamounts[5].append('Euler Seamount')             
+seamounts[6].append('Ridhi Seamount')             
+seamounts[7].append('Aiden Seamount')             
+seamounts[8].append('Loihi Seamount')                 
+seamounts[9].append("Kick 'em Jenny")
+seamounts[10].append('West Mata')
+seamounts[11].append('Vema Seamount')
 
 #####################
 #
@@ -225,8 +279,8 @@ treasures[11].append('88000 pieces of eight')
 #
 #####################
 
-version_message = version_string + '   using a browser: include client=browser. Make this brief: Use usage=brief'
-world_message   = 'ocean is ' + str(torew) + ' by ' + str(torns) + ' and hullspeed is ' + str(hullspeed)
+version_message = version_string + '   browser? add client=browser. brief? add usage=brief'
+world_message   = 'our ocean is ' + str(torew) + ' by ' + str(torns) + '. hullspeed is ' + str(hullspeed)
 
 @route('/mocean', method='GET')
 def mocean():
@@ -234,9 +288,6 @@ def mocean():
     m = ""
     client_type = request.GET.client.strip()
     usage_type  = request.GET.usage.strip()
-
-    print('usage_type:')
-    print(usage_type)
 
     if client_type == 'browser': 
         eol = '<br>'
@@ -258,16 +309,14 @@ def mocean():
 
     if usage_type == 'brief':
 
-        print('start of brief interior')
-
-        m  += "mocean       append ?client=browser to get HTML back, otherwise text     " + eol
+        m  += "mocean                 --> this message (this is the brief version)      " + eol
         m  += "join         name      --> id or '-1' on fail                            " + eol
         m  += "quit         name      --> '1' on success and '0' on fail                " + eol
         m  += "who                    --> there are 2 players: fred wilma               " + eol
         m  += "name         id        --> name of player with this id                   " + eol
         m  += "id           name      --> id of player with this name                   " + eol
         m  += "look         id        --> what you see, where it is: thing,x,y,z        " + eol
-        m  += "get          id            used to grab a treasure                       " + eol
+        m  += "get          id, item  --> did i manage to grab something nearby         " + eol
         m  += "inventory    id        --> list of what i have                           " + eol
         m  += "sendchat     id, name, message                                           " + eol
         m  += "popchat      id        --> the message for me if there is one (or '0')   " + eol
@@ -278,9 +327,6 @@ def mocean():
         m  += "teleport     id, x, y: teleport to new location                          " + eol
         m  += "ping         id        --> depth in +meters to sea floor where i am      " + eol
 
-        print('end of brief interior')
-        print(m)
-
     else: 
         m  += "    Unless noted: a FAIL returns string 0, SUCCESS returns 1                      " + eol
         m  += "                                                                                  " + eol
@@ -288,12 +334,11 @@ def mocean():
         m  += "=========        =========   ==================        =====================      " + eol
         m  += "                                                                                  " + eol
         m  += "BASIC ACTIONS                                                                     " + eol
-        m  += "mocean           -           -                         this message               " + eol
-        m  += "                                                         (from a browser: add on  " + eol
-        m  += "                                                          '?client=browser' for   " + eol
-        m  += "                                                          a better printout)      " + eol
+        m  += "mocean           -           -                         this message (long version)" + eol
+        m  += "                                                         client=browser --> HTML  " + eol
+        m  += "                                                         usage=brief --> brief    " + eol
         m  += "                                                                                  " + eol
-        m  += "join             name        letters + numbers only    id string                  " + eol
+        m  += "join             name        must be alphanumeric      id string                  " + eol
         m  += "                                                                                  " + eol
         m  += "quit             name        namestring                                           " + eol
         m  += "                                                                                  " + eol
@@ -306,10 +351,10 @@ def mocean():
         m  += "look             id          my id                     list of nearby things:     " + eol
         m  += "                                                         thing,x,y,z,             " + eol
         m  += "                                                                                  " + eol
-        m  += "get              id          my id                     grabs a nearby treasure    " + eol
-        m  += "                                                         use inventory to see     " + eol
+        m  += "get              id          my id                                                " + eol
+        m  += "                 item        item name                 try to get something       " + eol
         m  += "                                                                                  " + eol
-        m  += "inventory        id          my id                     list of what i have        " + eol
+        m  += "inventory        id          my id                     list items i have          " + eol
         m  += "                                                                                  " + eol
         m  += "COMMUNICATE                                                                       " + eol
         m  += "sendchat         id          sender id                                            " + eol
@@ -361,12 +406,10 @@ def mocean():
 @route('/join', method='GET')
 def join():
     candidate_name = request.GET.name.strip()
-    print(candidate_name)
     if not candidate_name.isalnum():
-        return '0'
+        return '-1'
     try :    
-        print('possible player name = ', candidate_name)
-        if candidate_name in players: return '0'
+        if candidate_name in players: return '-1'
         players.append(candidate_name) 
         loc.append([randint(startcoord_range_lo, startcoord_range_hi), 
                     randint(startcoord_range_lo, startcoord_range_hi), 
@@ -375,7 +418,8 @@ def join():
         lastloctime.append(time())
         maxspeed.append(hullspeed)
         chat.append('')
-        playerinventory.append(['air tank', 1.])           
+        playerinventory.append([['air tank', 'air tank', 1.]])           
+        whalerider.append(False)
     except ValueError as ve: return '0'
     return str(players.index(candidate_name))           
 
@@ -383,14 +427,13 @@ def join():
 @route('/quit', method='GET')
 def quit():
     candidate_quit = request.GET.name.strip()
-    print("                     quit:", candidate_quit)
     if not candidate_quit in players: 
-        return '0'
+        return 'quit failed as player name not found in the active players list'
     try : 
         player_index = players.index(candidate_quit)
         players[player_index] = ''
-    except : return '0'
-    return '1'
+    except : return 'exception trying to remove player from active players list'
+    return 'player ' + candidate_quit + ' removed from the game'
 
 
 @route('/who', method='GET')
@@ -408,7 +451,7 @@ def who():
 @route('/name', method='GET')
 def name(): 
     id = int(request.GET.id.strip())
-    if not idok(id): return '0'
+    if not idok(id): return 'bad player id; try debugging using the id route'
     if len(players[id]): return players[id]
     return '0'
 
@@ -424,7 +467,7 @@ def id():
 @route('/look', method='GET')
 def look(): 
     id = int(request.GET.id.strip())
-    if not idok(id): return '0'
+    if not idok(id): return 'bad player id; try debugging using the id route'
     nearbystring = ''
     theviewshed = viewshed(id)
     for whale in whales:
@@ -444,29 +487,105 @@ def look():
 
 @route('/get', method='GET')
 def get(): 
-    id = int(request.GET.id.strip())
-    if not idok(id): return '0'
-    for treasure in treasures:
-        if myproximity(id, treasure) < grabradius:
-            treasure_index = treasures.index(treasure)
-            playerinventory[id].append(treasure[3])
-            del(treasures[treasure_index])
-            print('diag: treasures = ' + str(treasures))
-            print('diag: player got treasure, their inv = ' + str(playerinventory[id]))
-    return 
+    try : 
+        id_string = request.GET.id.strip()
+        if len(id_string) == 0: 
+            return 'no id found'
+        id = int(id_string)
+        if not idok(id): return 'bad player id; try debugging using the id route'
+    except : 
+        return 'id exception in get route'
+    try : 
+        item = request.GET.item.strip()
+    except: 
+        return 'item exception in get route'
+    if item == 'treasure':
+        for treasure in treasures:
+            if myproximity(id, treasure) < grabradius:
+                playerinventory[id].append(['treasure', treasure[3]])
+                treasure_index = treasures.index(treasure)
+                del(treasures[treasure_index])
+                return 'treasure recovered!'
+        return 'no treasure within your reach'
+    elif item == 'whale':
+        if whalerider[id]: return 'you are already riding a whale'
+        if not plankton_bloom: return 'all the whales are too hungry to play'
+        for whale in whales:
+            if myproximity(id, whale) < grabradius:
+                whale_index = whales.index(whale)
+                whale_name = whale[3]
+                playerinventory[id].append(['whale', whale_name])
+                del(whales[whale_index])
+                whalerider[id] = True
+                maxspeed[id] = whalespeed
+                return 'you are riding a whale'
+        return 'no whales are within your reach'
+    return 'Did you include an item to get? If so that item is not available'
 
+
+@route('/whalename', method='GET')
+def whalename(): 
+    id = int(request.GET.id.strip())
+    if not idok(id): return 'bad player id; try debugging using the id route'
+    if not whalerider[id]: return 'this player has no whale and hence no whale name'
+    for inventoryitem in playerinventory[id]:
+        if inventoryitem[0] == 'whale': return inventoryitem[1]
+    return 'something is amiss; you are riding a whale but i could not find its name...'
+
+@route('/treasurename', method='GET')
+def treasurename():
+    id = int(request.GET.id.strip())
+    if not idok(id): return 'bad player id; try debugging using the id route'
+    msg = 'treasures held by ' + players[id] + ': '
+    for inventoryitem in playerinventory[id]:
+        if inventoryitem[0] == 'treasure':
+            msg += inventoryitem[1] + ' '
+    return msg
 
 @route('/inventory', method='GET')
 def inventory(): 
     id = int(request.GET.id.strip())
-    if not idok(id): return '0'
+    if not idok(id): return 'bad player id; try debugging using the id route'
     return str(playerinventory[id])
 
 
 @route('/use', method='GET')
-def give(): 
-  return 'use not implemented yet'
+def use(): 
+    global plankton_bloom
+    id = int(request.GET.id.strip())
+    if not idok(id): return 'bad player id; try debugging using the id route'
+    item = request.GET.item.strip()
 
+    # this matches on the item name, not the item type; so element [1] of its list
+    for inventoryitem in playerinventory[id]:
+        if item == inventoryitem[1]: 
+            if item == 'iron dust':
+                assert not plankton_bloom, 'player can use iron dust but plankton_bloom is True...' 
+                plankton_bloom = True
+                inventory_index = playerinventory[id].index(inventoryitem)
+                del(playerinventory[id][inventory_index])
+                return 'you sprinkle the iron dust on the surface of the ocean... the iron is a nutrient needed for plankton growth; so the plankton now bloom and grow like crazy! And so the whales enjoy a plankton feast...'
+            elif item == 'palantir':
+                return "you can see everything in your mind's eye at once..."
+            elif item == 'spare air':
+                return 'with a spare tank of air you can stay down longer'
+            elif item == 'JSON ROV':
+                return 'you send the ROV down... it can descend into the trench'
+            elif item == 'ALVIN submarine':
+                return 'you are able to dive down into the trench' 
+            elif item == 'map':
+                return 'you read the map; and it tells you where the good stuff is...'
+            elif item == 'teleport crystal':
+                return 'you can now teleport to anywhere in the mocean'
+            elif item == 'chrono-synclastic infundibulum':
+                return 'as you dissolve into wave-like form you realize you can go anywhere, more or less'
+            elif item == 'binoculars':
+                return 'you see off in the distance... a henway!!!'
+            elif item == 'ham and cheese sandwich':
+                return 'ah you feel much better, not so hungry and ready for action'
+            else:
+                return 'there is no way to make use of that item right now'
+    return "requested item not in player's inventory; be sure to use the item's exact name"
 
 ############################
 #
@@ -477,7 +596,7 @@ def give():
 @route('/sendchat', method='GET')
 def sendchat():
     id = int(request.GET.id.strip())
-    if not idok(id): return '0'
+    if not idok(id): return 'bad player id; try debugging using the id route'
     vel[id] = [0., 0.]                        # sendchat stops the player
                                               # this freezes you while you type out the message
                                               # and it runs whether or not you include the other args
@@ -498,7 +617,7 @@ def sendchat():
 @route('/popchat', method='GET')
 def popchat():
     id        = int(request.GET.id.strip())
-    if not idok(id): return '0'
+    if not idok(id): return 'bad player id; try debugging using the id route'
     if not len(chat[id]): return '0'
     try : 
         return_message = chat[id]
@@ -518,7 +637,7 @@ def popchat():
 @route('/location', method='GET')
 def location():
     id = int(request.GET.id.strip())
-    if not idok(id): return '0'
+    if not idok(id): return 'bad player id; try debugging using the id route'
     wrapflag = 0
     dt = time() - lastloctime[id]
     lastloctime[id] = time()
@@ -550,13 +669,13 @@ def location():
 @route('/velocity', method='GET')
 def velocity(): 
     id = int(request.GET.id.strip())
-    if not idok(id): return '0'
+    if not idok(id): return 'bad player id; try debugging using the id route'
     return velocitystring(id)
 
 @route('/accel', method='GET')
 def command():
     id = int(request.GET.id.strip())
-    if not idok(id): return '0'
+    if not idok(id): return 'bad player id; try debugging using the id route'
     ctrl = request.GET.ctrl.strip()
     if not ctrlok(ctrl): return '0'
     if   ctrl == 'w': gofaster(id)
@@ -569,7 +688,7 @@ def command():
 @route('/teleport', method='GET')
 def teleport():
     id  = int(request.GET.id.strip())
-    if not idok(id): return '0'
+    if not idok(id): return 'bad player id; try debugging using the id route'
     tic = time()
     x   = float(request.GET.x.strip())
     y   = float(request.GET.y.strip())
@@ -582,7 +701,7 @@ def teleport():
 @route('/dive', method='GET')
 def dive():
     id  = int(request.GET.id.strip())
-    if not idok(id): return '0'
+    if not idok(id): return 'bad player id; try debugging using the id route'
     ctrl = request.GET.ctrl.strip()
     if ctrl != 'r' and ctrl != 'f': return '0'
     if playerspeed(id) > 0: return '0'
@@ -600,11 +719,8 @@ def dive():
 @route('/ping', method='GET')
 def ping():
     id  = int(request.GET.id.strip())
-    if not idok(id): return '0'
-    # funny idea
-    # if playerspeed(id) > hullspeed/2: return str(200 + randint(1,500))
+    if not idok(id): return 'bad player id; try debugging using the id route'
     thisdepth = bathymetry(loc[id][0], loc[id][1])
-    # print(loc[id][0], loc[id][1], thisdepth)
     return str(thisdepth)
 
 

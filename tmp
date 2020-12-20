@@ -1,0 +1,19 @@
+item is treasure
+<class 'str'>
+[185, 400, 2.4489803602750326, 'iron dust']
+[269, 153, 15.967396116994196, 'iron dust']
+playerinventory: [['air tank', 'air tank', 1.0], ['treasure', 'iron dust']]
+[[185, 400, 2.4489803602750326, 'iron dust'], [472, 346, 16.704674317117984, 'iron dust'], [199, 621, 17.957018072149218, 'iron dust'], [305, 461, 7.728391505386995, 'iron dust'], [141, 392, 7.320629299850349, 'iron dust'], [646, 733, 18.236142947479294, 'iron dust'], [400, 544, 7.998872960446619, 'iron dust'], [96, 547, 8.368747568658613, 'iron dust'], [241, 700, 16.384261019977075, 'iron dust'], [828, 794, 5.827621005038424, 'iron dust'], [829, 458, 9.651295408995576, 'iron dust']]
+id in use = 0
+item in use = iron dust
+['air tank', 'air tank', 1.0]
+['treasure', 'iron dust']
+iron dust
+plankton:  False
+plankton = True
+item is whale
+<class 'str'>
+item is whale
+<class 'str'>
+item is whale
+<class 'str'>
