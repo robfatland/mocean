@@ -6,40 +6,40 @@
 #   Joined player has a name and index (spoofing possible!) 
 #     players[]:  a list of strings. Quit player has namestring set to ''
 #     loc[] list of coordinate lists: [x, y, z]
-#     vel[] list of velocity lists: [vx, vy]
+#     vel[] list of velocity lists: [vx, vy, heading_radians]
 #     chat[]: a list of strings: chat messages, one per player
 #     lastloctime[]: a list of time-of-last-location request
 #         ...used to calculate new position according to distance = speed x time
 #
 # notes
 # ids are immediately converted to integers here for use as index into player stats
-# teleport only if portkey in playerinventory
-# check all return values: strings
-# there are unnamed whales and seamounts
-# need to get the iron mechanism going
 # all playerinventory items are lists that begin with the type of the item, then the specific name, then other metadata
 #   ['air tank', 'air tank', 1.] so [2] is how much air remains
 #   ['treasure', name of treasure]
 #   ['whale', name of whale]
-#   need more route info outside of the mocean basics
-#   need to ensure teleport does not work unless you have the portkey
 #
-# need to test whalename, treasurename and use()
-# need a stop function to set velocity to zero
-# need to document stuff I did not expect
-#   use of plankton_bloom as a global state variable in a route fn required a global dec
-#   use of a list of lists required [[]] for the initialization of air tank
+# NEXT!
+#   need to go through all int() calls and delete when not necessary (on ids particularly)
+#   need more route info outside of the mocean basics
+#   test whalename, treasurename and use()
+#   bug? does a look action cross the edge boundaries properly?
+#   bug? I have yet to complete the look route by including a scan for players
+#   should communication with other players only be possible if in sight? 
+# 
+# DOCUMENTATION
+#   when is it necessary to use global? plankton_bloom had to have this... but vel and players and loc lists do not...
+#   use of a list of lists required [[]] for the initialization of air tank so that subsequent treasure appends works
 # 
 # funny sonar cavitation idea: If speed > max / 2 or something: return random noise for depth
 
-version_string = "V3.14 Boom Edition ...1"
+version_string = "V3.14 Boom Edition ...15"
 
 # added for application code version:
 import bottle
 
 from bottle import request, route, run
 import json
-from math import sqrt, exp
+from math import sqrt, exp, sin, cos
 import math
 from random import randint, random
 from time import time
@@ -80,7 +80,8 @@ tr.append([260, 330, 360, 365])
 tr.append([330, 338, 360, 450])
 tr.append([330, 410, 450, 455])
 
-viewshedbase = 50.
+viewshedbase       = 50.
+viewshedbinoculars = 200.
 
 ###################
 #
@@ -111,8 +112,8 @@ def bathymetry(x, y):
         for i in range(len(seamounts)):
             depth -= calcseamount(i, x, y)
             if depth < 0.:
-              depth = 0. 
-              break
+                depth = 0. 
+                break
     return depth
 
 
@@ -122,11 +123,18 @@ def idok(id):
     if id_int < 0 or id_int >= len(players) or len(players[id_int]) == 0: return False
     return True
 
+def itemindex(id, item):
+    '''if item in p[id]'s inventory list (match sub-list[1]): Return the index of that item, else -1'''
+    for inventoryitem in playerinventory[id]:
+        if item == inventoryitem[1]: 
+            return playerinventory[id].index(inventoryitem)
+    return -1
 
 def viewshed(id):
-    '''determine how far a player can see based on their depth'''
+    '''determine how far a player can see'''
+    if itemindex(id, 'binoculars') >= 0: return viewshedbinoculars
     retval = viewshedbase - loc[id][2]
-    if retval < 5: retval = 5
+    if retval < 5.: retval = 5.
     return retval
 
 
@@ -140,6 +148,12 @@ def myproximity(id, thing):
     id_int = int(id)
     return proximity(loc[id_int][0], loc[id_int][1], loc[id_int][2], thing[0], thing[1], thing[2])
 
+def myplayerproximity(name1, name2): 
+    '''determine distance between a player (from id) and a thing'''
+    i1 = players.index(name1)
+    i2 = players.index(name2)
+    return proximity(loc[i1][0], loc[i1][1], loc[i1][2], loc[i2][0], loc[i2][1], loc[i2][2])
+
 
 def locationstring(id):    
     '''convert a player x y z location to a comma-separated string'''
@@ -150,8 +164,12 @@ def locationstring(id):
 def velocitystring(id):    
     '''convert a player vx vy velocity to a comma-separated string'''
     id_int = int(id)
-    return str(vel[id_int][0]) + ',' + str(vel[id_int][1])
+    return str(vel[id_int][0]) + ',' + str(vel[id_int][1]) + ',' + str(vel[id_int][2])
 
+def playerheading(id):       
+    '''return player heading in radians as a floating point value'''
+    id_int = int(id)
+    return math.atan2(vel[id_int][1], vel[id_int][0])
 
 def playerspeed(id):       
     '''return player speed as a floating point value'''
@@ -175,9 +193,9 @@ def tapbreaks(id):
     '''slow down the player (or if they are slow already: stop them)'''
     id_int = int(id)
     if playerspeed(id_int) < minspeed: 
-        vel[id_int] = [0., 0.]
+        vel[id_int][0], vel[id_int][1] = 0., 0.
         return True
-    vel[id_int] = [slowfactor * vel[id_int][0], slowfactor * vel[id_int][1]]
+    vel[id_int][0], vel[id_int][1] = slowfactor * vel[id_int][0], slowfactor * vel[id_int][1]
     return True
 
 
@@ -187,7 +205,7 @@ def gofaster(id):
     the_speed = playerspeed(id_int)
     if the_speed > maxspeed[id_int]: return True
     if the_speed == 0.: 
-        vel[id_int] = [1., 0.]
+        vel[id_int][0], vel[id_int][1] = cos(vel[id_int][2]), sin(vel[id_int][2])
         return True
     vel[id_int] = [fastfactor * vel[id_int][0], fastfactor * vel[id_int][1]]
     return True
@@ -195,13 +213,19 @@ def gofaster(id):
 def veer(id, direction):
     '''veer off left or right corresponding to a / d controls'''
     id_int = int(id)
-    the_speed = playerspeed(id_int)
-    if the_speed == 0.: return True
-    heading = math.atan2(vel[id_int][1], vel[id_int][0])
+    s = playerspeed(id_int)
+    heading = vel[id][2]
     if direction == 'left': heading += veerangle
     else:                   heading -= veerangle
-    vel[id_int] = [the_speed*math.cos(heading),the_speed*math.sin(heading)]
+    vel[id_int][2] = heading
+    vel[id_int][0], vel[id_int][1] = s*cos(heading), s*sin(heading)
     return True
+
+##########
+#
+# functions for Steps game
+#
+##########
 
 def genfibo(n):
     if n < 3: n = 3
@@ -227,6 +251,8 @@ nWhales = 17
 nTreasures = nSeamounts
 
 whales    = [[randint(0, torew - 1), randint(0, torns - 1), 0] for i in range(nWhales)]
+
+# this is of course a hardcode
 whales[0].append('Anisha')
 whales[1].append('Stephen Jay Gould')
 whales[2].append('Debbie')
@@ -247,6 +273,7 @@ whales[16].append('Yayoi Kusama')
 
 treasures = [[seamounts[i][0], seamounts[i][1], bathymetry(seamounts[i][0], seamounts[i][1])] for i in range(len(seamounts))]
 
+# this is of course a hardcode
 treasures[0].append('palantir')
 treasures[1].append('spare air')
 treasures[2].append('JSON ROV')
@@ -260,6 +287,7 @@ treasures[9].append('iron dust')
 treasures[10].append('iron dust')
 treasures[11].append('iron dust')
 
+# this is of course a hardcode
 seamounts[0].append('Mount Crumpet')                 
 seamounts[1].append('Axial Seamount')                     
 seamounts[2].append('Meru Prastarah')                     
@@ -321,7 +349,7 @@ def mocean():
         m  += "sendchat     id, name, message                                           " + eol
         m  += "popchat      id        --> the message for me if there is one (or '0')   " + eol
         m  += "location     id        --> x, y, z, wrap flag, message flag, nearby flag " + eol
-        m  += "velocity     id        --> vx, vy as my velocity                         " + eol
+        m  += "velocity     id        --> vx, vy, heading in radians                    " + eol
         m  += "accel        id, ctrl: use w faster s slower a left d right              " + eol
         m  += "dive         id, ctrl: use r to rise and f to go deeper                  " + eol
         m  += "teleport     id, x, y: teleport to new location                          " + eol
@@ -371,14 +399,14 @@ def mocean():
         m  += "                                                         f1 = message flag        " + eol
         m  += "                                                         f2 = nearby flag         " + eol
         m  += "                                                                                  " + eol
-        m  += "velocity         id          my id                     vx,vy = velocity           " + eol
+        m  += "velocity         id          my id                     vx,vy,heading in radians   " + eol
         m  += "                                                                                  " + eol
         m  += "accel            id          my id                                                " + eol
-        m  += "                 ctrl        one of: w a s d           x,y,z,vx,vy (loc, vel)     " + eol
+        m  += "                 ctrl        one of: w a s d           x,y,z,vx,vy,heading        " + eol
         m  += "                                                                                  " + eol
         m  += "dive             id          my id                                                " + eol
         m  += "                 ctrl        one of: r f               r = rise, f = down         " + eol
-        m  += "                                                       x,y,z,vx,vy (loc, vel)     " + eol
+        m  += "                                                       x,y,z,vx,vy,heading        " + eol
         m  += "                                                                                  " + eol
         m  += "teleport         id          my id                                                " + eol
         m  += "                 x           destination x                                        " + eol
@@ -405,22 +433,21 @@ def mocean():
 
 @route('/join', method='GET')
 def join():
-    candidate_name = request.GET.name.strip()
-    if not candidate_name.isalnum():
-        return '-1'
+    name = request.GET.name.strip()
+    if not name.isalnum(): return '-1'
     try :    
-        if candidate_name in players: return '-1'
-        players.append(candidate_name) 
+        if name in players: return '-1'
+        players.append(name) 
         loc.append([randint(startcoord_range_lo, startcoord_range_hi), 
                     randint(startcoord_range_lo, startcoord_range_hi), 
-                    0])
-        vel.append([0., 0.])
+                    0.])
+        vel.append([0., 0., random()*2.*pi])
         lastloctime.append(time())
         maxspeed.append(hullspeed)
         chat.append('')
         playerinventory.append([['air tank', 'air tank', 1.]])           
         whalerider.append(False)
-    except ValueError as ve: return '0'
+    except ValueError as ve: return '-1'
     return str(players.index(candidate_name))           
 
 
@@ -556,15 +583,19 @@ def use():
     if not idok(id): return 'bad player id; try debugging using the id route'
     item = request.GET.item.strip()
 
-    # this matches on the item name, not the item type; so element [1] of its list
-    for inventoryitem in playerinventory[id]:
-        if item == inventoryitem[1]: 
-            if item == 'iron dust':
-                assert not plankton_bloom, 'player can use iron dust but plankton_bloom is True...' 
-                plankton_bloom = True
-                inventory_index = playerinventory[id].index(inventoryitem)
-                del(playerinventory[id][inventory_index])
-                return 'you sprinkle the iron dust on the surface of the ocean... the iron is a nutrient needed for plankton growth; so the plankton now bloom and grow like crazy! And so the whales enjoy a plankton feast...'
+    thisindex = itemindex(id, item)
+    if thisindex == -1: return 'player does not have requested item to use'
+
+    if item == 'iron dust':
+        plankton_bloom = True
+                del(playerinventory[id][thisindex])
+                msg  = 'you sprinkle the iron dust on the surface of the ocean...\n'
+                msg += '...the iron is a nutrient needed by plankton... \n'
+                msg += '...so with all this iron the plankton begin to bloom...\n'
+                msg += '...filling the ocean with miniscule copepods...\n'
+                msg += '...which is what whales love to eat...\n'
+                msg += '...so the whales enjoy a plankton feast...'
+                return msg
             elif item == 'palantir':
                 return "you can see everything in your mind's eye at once..."
             elif item == 'spare air':
@@ -597,7 +628,8 @@ def use():
 def sendchat():
     id = int(request.GET.id.strip())
     if not idok(id): return 'bad player id; try debugging using the id route'
-    vel[id] = [0., 0.]                        # sendchat stops the player
+
+    vel[id][0], vel[id][1] = 0., 0.           # sendchat stops the player
                                               # this freezes you while you type out the message
                                               # and it runs whether or not you include the other args
     recipient = request.GET.name.strip()
@@ -608,7 +640,7 @@ def sendchat():
     recip_id = players.index(recipient)
     if len(chat[recip_id]): return '0'
     try : 
-        chat[recip_id] = players[id] + ': ' + message
+        chat[recip_id] = 'sender ' + players[id] + 'says: ' + message
         return '1'
     except : return '0' 
     return '0'
@@ -638,9 +670,11 @@ def popchat():
 def location():
     id = int(request.GET.id.strip())
     if not idok(id): return 'bad player id; try debugging using the id route'
+
     wrapflag = 0
-    dt = time() - lastloctime[id]
-    lastloctime[id] = time()
+    thisnow = time()
+    dt = thisnow - lastloctime[id]
+    lastloctime[id] = thisnow
     loc[id][0] += vel[id][0] * dt
     loc[id][1] += vel[id][1] * dt
     if loc[id][0] < 0:      loc[id][0] += torew ; wrapflag = 1
@@ -651,7 +685,8 @@ def location():
     # access the message with the popchat route
     msgflag = 0 if not len(chat[id]) else 1
 
-    # nearbyflag is intended to reduce the number of 'look' routes
+    # nearbyflag reduces 'look' calls... arguably not really useful
+    #   check treasures, whales and other players
     nearbyflag = 0 
     theviewshed = viewshed(id)
     for treasure in treasures:
@@ -661,6 +696,11 @@ def location():
     if not nearbyflag: 
         for whale in whales:
             if myproximity(id, whale) < theviewshed: 
+                nearbyflag = 1
+                break
+    if not nearbyflag:
+        for name in players: 
+            if name != players[id] and len(name) > 0 and myplayerproximity(players[id], name) < theviewshed:
                 nearbyflag = 1
                 break
 
@@ -673,11 +713,11 @@ def velocity():
     return velocitystring(id)
 
 @route('/accel', method='GET')
-def command():
+def accel():
     id = int(request.GET.id.strip())
     if not idok(id): return 'bad player id; try debugging using the id route'
     ctrl = request.GET.ctrl.strip()
-    if not ctrlok(ctrl): return '0'
+    if not ctrlok(ctrl): return 'accel route fail, possibly bad ctrl (should be one of: w a s d)'
     if   ctrl == 'w': gofaster(id)
     elif ctrl == 's': tapbreaks(id)
     else: 
@@ -685,18 +725,26 @@ def command():
         veer(id, veerdirection)
     return locationstring(id) + ',' + velocitystring(id)
 
+@route('/stop', method='GET')
+def stop():
+    id = int(request.GET.id.strip())
+    if not idok(id): return 'bad player id; try debugging using the id route'
+    vel[id][0], vel[id][1] = 0., 0.
+    return locationstring(id) + ',' + velocitystring(id)
+
 @route('/teleport', method='GET')
 def teleport():
+    '''teleport to x, y provided you have a teleport crystal in your inventory'''
     id  = int(request.GET.id.strip())
     if not idok(id): return 'bad player id; try debugging using the id route'
-    tic = time()
+    if itemindex(id, 'teleport crystal') < 0: return 'you need to find a particular treasure to teleport'
     x   = float(request.GET.x.strip())
     y   = float(request.GET.y.strip())
     if x >= 0. and x < torew and y >= 0. and y < torns:
         loc[id] = [x, y, 0.]
-        dt = time() - tic
-        return locationstring(id) + ',' + str(dt*1000.)
-    return '0'
+        vel[id][0], vel[id][1] = 0., 0.
+        return locationstring(id)
+    return 'teleport failed, possibly bad x, y coordinates?'
 
 @route('/dive', method='GET')
 def dive():
