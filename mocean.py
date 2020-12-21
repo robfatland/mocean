@@ -19,9 +19,8 @@
 #   ['whale', name of whale]
 #
 # NEXT!
-#   need to go through all int() calls and delete when not necessary (on ids particularly)
 #   need more route info outside of the mocean basics
-#   test whalename, treasurename and use()
+#   test whalename, treasurename
 #   bug? does a look action cross the edge boundaries properly?
 #   bug? I have yet to complete the look route by including a scan for players
 #   should communication with other players only be possible if in sight? 
@@ -32,7 +31,7 @@
 # 
 # funny sonar cavitation idea: If speed > max / 2 or something: return random noise for depth
 
-version_string = "V3.14 Boom Edition ...15"
+version_string = "V3.14 Boom Edition ...159"
 
 # added for application code version:
 import bottle
@@ -59,7 +58,7 @@ minspeed = 0.33
 slowfactor = 0.6
 fastfactor = 1.45
 veerangle = math.pi/12.
-grabradius = 30.
+grabradius = 10.
 
 # vertical parameters
 deltadive = 5.
@@ -80,8 +79,8 @@ tr.append([260, 330, 360, 365])
 tr.append([330, 338, 360, 450])
 tr.append([330, 410, 450, 455])
 
-viewshedbase       = 50.
-viewshedbinoculars = 200.
+viewshedbase       = 20.
+viewshedbinoculars = 100.
 
 ###################
 #
@@ -119,8 +118,7 @@ def bathymetry(x, y):
 
 def idok(id):
     '''boolean integer id value corresponds to a player'''
-    id_int = int(id)
-    if id_int < 0 or id_int >= len(players) or len(players[id_int]) == 0: return False
+    if id < 0 or id >= len(players) or len(players[id]) == 0: return False
     return True
 
 def itemindex(id, item):
@@ -145,8 +143,7 @@ def proximity(x, y, z, u, v, w):
 
 def myproximity(id, thing): 
     '''determine distance between a player (from id) and a thing'''
-    id_int = int(id)
-    return proximity(loc[id_int][0], loc[id_int][1], loc[id_int][2], thing[0], thing[1], thing[2])
+    return proximity(loc[id][0], loc[id][1], loc[id][2], thing[0], thing[1], thing[2])
 
 def myplayerproximity(name1, name2): 
     '''determine distance between a player (from id) and a thing'''
@@ -157,30 +154,25 @@ def myplayerproximity(name1, name2):
 
 def locationstring(id):    
     '''convert a player x y z location to a comma-separated string'''
-    id_int = int(id)
-    return str(loc[id_int][0]) + ',' + str(loc[id_int][1]) + ',' + str(loc[id_int][2])
+    return str(loc[id][0]) + ',' + str(loc[id][1]) + ',' + str(loc[id][2])
 
 
 def velocitystring(id):    
     '''convert a player vx vy velocity to a comma-separated string'''
-    id_int = int(id)
-    return str(vel[id_int][0]) + ',' + str(vel[id_int][1]) + ',' + str(vel[id_int][2])
+    return str(vel[id][0]) + ',' + str(vel[id][1]) + ',' + str(vel[id][2])
 
 def playerheading(id):       
     '''return player heading in radians as a floating point value'''
-    id_int = int(id)
-    return math.atan2(vel[id_int][1], vel[id_int][0])
+    return math.atan2(vel[id][1], vel[id][0])
 
 def playerspeed(id):       
     '''return player speed as a floating point value'''
-    id_int = int(id)
-    return sqrt(vel[id_int][0]**2 + vel[id_int][1]**2)
+    return sqrt(vel[id][0]**2 + vel[id][1]**2)
 
 
 def playerspeedstring(id): 
     '''return player speed as a string'''
-    id_int = int(id)
-    return str(playerspeed(id_int))
+    return str(playerspeed(id))
 
 
 def ctrlok(ctrl):
@@ -191,34 +183,30 @@ def ctrlok(ctrl):
 
 def tapbreaks(id): 
     '''slow down the player (or if they are slow already: stop them)'''
-    id_int = int(id)
-    if playerspeed(id_int) < minspeed: 
-        vel[id_int][0], vel[id_int][1] = 0., 0.
+    if playerspeed(id) < minspeed: 
+        vel[id][0], vel[id][1] = 0., 0.
         return True
-    vel[id_int][0], vel[id_int][1] = slowfactor * vel[id_int][0], slowfactor * vel[id_int][1]
+    vel[id][0], vel[id][1] = slowfactor * vel[id][0], slowfactor * vel[id][1]
     return True
 
 
 def gofaster(id): 
     '''speed the player up by fastfactor, up to the players maximum speed'''
-    id_int = int(id)
-    the_speed = playerspeed(id_int)
-    if the_speed > maxspeed[id_int]: return True
+    the_speed = playerspeed(id)
+    if the_speed > maxspeed[id]: return True
     if the_speed == 0.: 
-        vel[id_int][0], vel[id_int][1] = cos(vel[id_int][2]), sin(vel[id_int][2])
+        vel[id][0], vel[id][1] = cos(vel[id][2]), sin(vel[id][2])
         return True
-    vel[id_int] = [fastfactor * vel[id_int][0], fastfactor * vel[id_int][1]]
+    vel[id][0], vel[id][1] = fastfactor * vel[id][0], fastfactor * vel[id][1]
     return True
 
 def veer(id, direction):
     '''veer off left or right corresponding to a / d controls'''
-    id_int = int(id)
-    s = playerspeed(id_int)
+    s = playerspeed(id)
     heading = vel[id][2]
     if direction == 'left': heading += veerangle
     else:                   heading -= veerangle
-    vel[id_int][2] = heading
-    vel[id_int][0], vel[id_int][1] = s*cos(heading), s*sin(heading)
+    vel[id][0], vel[id][1], vel[id][2] = s*cos(heading), s*sin(heading), heading
     return True
 
 ##########
@@ -441,26 +429,26 @@ def join():
         loc.append([randint(startcoord_range_lo, startcoord_range_hi), 
                     randint(startcoord_range_lo, startcoord_range_hi), 
                     0.])
-        vel.append([0., 0., random()*2.*pi])
+        vel.append([0., 0., random()*2.*math.pi])
         lastloctime.append(time())
         maxspeed.append(hullspeed)
         chat.append('')
         playerinventory.append([['air tank', 'air tank', 1.]])           
         whalerider.append(False)
     except ValueError as ve: return '-1'
-    return str(players.index(candidate_name))           
+    return str(players.index(name))           
 
 
 @route('/quit', method='GET')
 def quit():
-    candidate_quit = request.GET.name.strip()
-    if not candidate_quit in players: 
-        return 'quit failed as player name not found in the active players list'
+    name = request.GET.name.strip()
+    if not name in players: 
+        return 'quit failed: name not found in the active players list'
     try : 
-        player_index = players.index(candidate_quit)
+        player_index = players.index(name)
         players[player_index] = ''
     except : return 'exception trying to remove player from active players list'
-    return 'player ' + candidate_quit + ' removed from the game'
+    return 'player ' + name + ' removed from the game'
 
 
 @route('/who', method='GET')
@@ -515,10 +503,7 @@ def look():
 @route('/get', method='GET')
 def get(): 
     try : 
-        id_string = request.GET.id.strip()
-        if len(id_string) == 0: 
-            return 'no id found'
-        id = int(id_string)
+        id = int(request.GET.id.strip())
         if not idok(id): return 'bad player id; try debugging using the id route'
     except : 
         return 'id exception in get route'
@@ -549,6 +534,12 @@ def get():
         return 'no whales are within your reach'
     return 'Did you include an item to get? If so that item is not available'
 
+@route('/backdoor', method='GET')
+def backdoor(): 
+    id = int(request.GET.id.strip())
+    if not idok(id): return 'bad player id; try debugging using the id route'
+    for treasure in treasures: playerinventory[id].append(['treasure', treasure[3]])
+    return 'ok'
 
 @route('/whalename', method='GET')
 def whalename(): 
@@ -588,34 +579,34 @@ def use():
 
     if item == 'iron dust':
         plankton_bloom = True
-                del(playerinventory[id][thisindex])
-                msg  = 'you sprinkle the iron dust on the surface of the ocean...\n'
-                msg += '...the iron is a nutrient needed by plankton... \n'
-                msg += '...so with all this iron the plankton begin to bloom...\n'
-                msg += '...filling the ocean with miniscule copepods...\n'
-                msg += '...which is what whales love to eat...\n'
-                msg += '...so the whales enjoy a plankton feast...'
-                return msg
-            elif item == 'palantir':
-                return "you can see everything in your mind's eye at once..."
-            elif item == 'spare air':
-                return 'with a spare tank of air you can stay down longer'
-            elif item == 'JSON ROV':
-                return 'you send the ROV down... it can descend into the trench'
-            elif item == 'ALVIN submarine':
-                return 'you are able to dive down into the trench' 
-            elif item == 'map':
-                return 'you read the map; and it tells you where the good stuff is...'
-            elif item == 'teleport crystal':
-                return 'you can now teleport to anywhere in the mocean'
-            elif item == 'chrono-synclastic infundibulum':
-                return 'as you dissolve into wave-like form you realize you can go anywhere, more or less'
-            elif item == 'binoculars':
-                return 'you see off in the distance... a henway!!!'
-            elif item == 'ham and cheese sandwich':
-                return 'ah you feel much better, not so hungry and ready for action'
-            else:
-                return 'there is no way to make use of that item right now'
+        del(playerinventory[id][thisindex])
+        msg  = 'you sprinkle the iron dust on the surface of the ocean...\n'
+        msg += '...the iron is a nutrient needed by plankton... \n'
+        msg += '...so with all this iron the plankton begin to bloom...\n'
+        msg += '...filling the ocean with miniscule copepods...\n'
+        msg += '...which is what whales love to eat...\n'
+        msg += '...so the whales enjoy a plankton feast...'
+        return msg
+    elif item == 'palantir':
+        return "you can see everything in your mind's eye at once..."
+    elif item == 'spare air':
+        return 'with a spare tank of air you can stay down longer'
+    elif item == 'JSON ROV':
+        return 'you send the ROV down... it can descend to the bottom of the ocean'
+    elif item == 'ALVIN submarine':
+        return 'with ALVIN you are able to dive down into the trench' 
+    elif item == 'map':
+        return 'you read the map; it tells you where the good stuff is...'
+    elif item == 'teleport crystal':
+        return 'you can now teleport to anywhere in the mocean'
+    elif item == 'chrono-synclastic infundibulum':
+        return 'as you dissolve into wave-like form you realize you can go anywhere, more or less'
+    elif item == 'binoculars':
+        return 'you see off in the distance... a henway!!!'
+    elif item == 'ham and cheese sandwich':
+        return 'ah you feel much better, not so hungry and ready for action'
+    else:
+        return 'there is no way to make use of that item right now'
     return "requested item not in player's inventory; be sure to use the item's exact name"
 
 ############################
@@ -751,8 +742,8 @@ def dive():
     id  = int(request.GET.id.strip())
     if not idok(id): return 'bad player id; try debugging using the id route'
     ctrl = request.GET.ctrl.strip()
-    if ctrl != 'r' and ctrl != 'f': return '0'
-    if playerspeed(id) > 0: return '0'
+    if ctrl != 'r' and ctrl != 'f': return '-1'
+    if playerspeed(id) > 0: vel[id][0], vel[id][1] = 0., 0.
     mydepth = loc[id][2]
     if ctrl == 'r':
         mydepth -= deltadive
