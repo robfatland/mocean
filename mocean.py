@@ -13,6 +13,7 @@
 #
 # notes
 # ids are immediately converted to integers here for use as index into player stats
+# speed is reduced when you dive unless you are riding a whale
 # all playerinventory items are lists that begin with the type of the item, then the specific name, then other metadata
 #   ['air tank', 'air tank', 1.] so [2] is how much air remains
 #   ['treasure', name of treasure]
@@ -53,12 +54,14 @@ startcoord_range_hi = 200
 plankton_bloom = False
 
 hullspeed = 40.
+submergedspeed = 5.
 whalespeed = 80.
 minspeed = 0.33
 slowfactor = 0.6
 fastfactor = 1.45
 veerangle = math.pi/12.
 grabradius = 10.
+boathookradius = 35.
 
 # vertical parameters
 deltadive = 5.
@@ -512,9 +515,13 @@ def get():
         item = request.GET.item.strip()
     except: 
         return 'item exception in get route'
+
+    # the operational radius of a get depends on whether the player has the boathook treasure
+    radius = boathookradius if not itemindex(id, 'boat hook') < 0 else grabradius
+
     if item == 'treasure':
         for treasure in treasures:
-            if myproximity(id, treasure) < grabradius:
+            if myproximity(id, treasure) < radius:
                 playerinventory[id].append(['treasure', treasure[3]])
                 treasure_index = treasures.index(treasure)
  
@@ -527,7 +534,7 @@ def get():
         if whalerider[id]: return 'you are already riding a whale'
         if not plankton_bloom: return 'all the whales are too hungry to play'
         for whale in whales:
-            if myproximity(id, whale) < grabradius:
+            if myproximity(id, whale) < radius:
                 whale_index = whales.index(whale)
                 whale_name = whale[3]
                 playerinventory[id].append(['whale', whale_name])
@@ -540,6 +547,13 @@ def get():
 
 @route('/backdoor', method='GET')
 def backdoor(): 
+    id = int(request.GET.id.strip())
+    if not idok(id): return 'bad player id; try debugging using the id route'
+    for treasure in treasures: playerinventory[id].append(['treasure', treasure[3]])
+    return 'ok'
+
+@route('/bonanza', method='GET')
+def bonanza(): 
     id = int(request.GET.id.strip())
     if not idok(id): return 'bad player id; try debugging using the id route'
     for treasure in treasures: playerinventory[id].append(['treasure', treasure[3]])
@@ -677,11 +691,14 @@ def location():
     if loc[id][0] >= torew: loc[id][0] -= torew ; wrapflag = 1
     if loc[id][1] >= torns: loc[id][1] -= torns ; wrapflag = 1
 
-    # adjust depth if submerged and bottom rises
+    # if submerged adjust maxspeed and change depth if the sea floor rises
     if loc[id][2] > 0.:
+        if not whalerider[id]: maxspeed[id] = submergedspeed
         depth = bathymetry(loc[id][0], loc[id][1])
         if depth < loc[id][2]:
             loc[id][2] = depth
+            # when forced to surface return max speed to hull speed
+            if depth == 0. and not whalerider[id]: maxspeed[id] = hullspeed
 
     # access the message with the popchat route
     msgflag = 0 if not len(chat[id]) else 1
@@ -758,6 +775,7 @@ def dive():
     if ctrl == 'r':
         mydepth -= deltadive
         if mydepth < 0.: mydepth = 0.
+        if mydepth == 0. and not whalerider[id]: maxspeed[id] = hullspeed
     else:
         seafloordepth = bathymetry(loc[id][0], loc[id][1])
         mydepth += deltadive
