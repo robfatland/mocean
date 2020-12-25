@@ -46,7 +46,7 @@ from time import time
 
 # configure global state values
 players, loc, vel, chat, lastloctime = [], [], [], [], []
-maxspeed, playerinventory, whalerider = [], [], []
+maxspeed, playerinventory, whalerider, inlostcity = [], [], [], []
 torns, torew = 900, 900
 startcoord_range_lo = 40
 startcoord_range_hi = 200
@@ -262,16 +262,16 @@ whales[16].append('Yayoi Kusama')
 treasures = [[seamounts[i][0], seamounts[i][1], bathymetry(seamounts[i][0], seamounts[i][1])] for i in range(len(seamounts))]
 
 # this is of course a hardcode
-treasures[0].append('palantir')
+treasures[0].append('fishing net')
 treasures[1].append('spare air')
 treasures[2].append('JSON ROV')
 treasures[3].append('ALVIN submarine')
-treasures[4].append('map')
+treasures[4].append('imaging sonar')
 treasures[5].append('teleport crystal')
 treasures[6].append('chrono-synclastic infundibulum')
 treasures[7].append('binoculars')
 treasures[8].append('ham and cheese sandwich')
-treasures[9].append('iron dust')
+treasures[9].append('boat hook')
 treasures[10].append('iron dust')
 treasures[11].append('iron dust')
 
@@ -435,6 +435,7 @@ def join():
         chat.append('')
         playerinventory.append([['air tank', 'air tank', 1.]])           
         whalerider.append(False)
+        inlostcity.append(False)
     except ValueError as ve: return '-1'
     return str(players.index(name))           
 
@@ -516,7 +517,10 @@ def get():
             if myproximity(id, treasure) < grabradius:
                 playerinventory[id].append(['treasure', treasure[3]])
                 treasure_index = treasures.index(treasure)
-                del(treasures[treasure_index])
+ 
+                # an infinite supply of iron dust: it is not deleted from treasures[]
+                if not treasures[treasure_index][1] == 'iron dust':
+                    del(treasures[treasure_index])
                 return 'treasure recovered!'
         return 'no treasure within your reach'
     elif item == 'whale':
@@ -673,6 +677,12 @@ def location():
     if loc[id][0] >= torew: loc[id][0] -= torew ; wrapflag = 1
     if loc[id][1] >= torns: loc[id][1] -= torns ; wrapflag = 1
 
+    # adjust depth if submerged and bottom rises
+    if loc[id][2] > 0.:
+        depth = bathymetry(loc[id][0], loc[id][1])
+        if depth < loc[id][2]:
+            loc[id][2] = depth
+
     # access the message with the popchat route
     msgflag = 0 if not len(chat[id]) else 1
 
@@ -743,7 +753,7 @@ def dive():
     if not idok(id): return 'bad player id; try debugging using the id route'
     ctrl = request.GET.ctrl.strip()
     if ctrl != 'r' and ctrl != 'f': return '-1'
-    if playerspeed(id) > 0: vel[id][0], vel[id][1] = 0., 0.
+    vel[id][0], vel[id][1] = 0., 0.
     mydepth = loc[id][2]
     if ctrl == 'r':
         mydepth -= deltadive
