@@ -1,67 +1,31 @@
 # The ***Mocean*** Python Bytes Team Project 
 
-This is a project designed and built for a Middle School Python club. The objective is to
-learn as much about coding in Python as possible using an online game framework as our 
-motivation. The main game is called **Mocean** and very little is known about it at this 
-point... because the students have to design it. Here is what we know so far: 
+This project was designed by and for Middle School Python Learners. Most of the code was written
+by me. We learn Python motivated by an online game framework. The game is **Mocean**.
 
 
-* The game **Mocean** is played on an ocean planet somewhere
-* The game supports multiple players
-* There is a single Server on the Internet that knows who is where
-* Each player joins and plays using their own Client
-* Clients talk to the server using a protocol; which means *communication rules*.
+* The game **Mocean** is played on an ocean planet
+* It supports multiple players: Human beings running Client apps
+* There is a single Server on the Internet that knows who is playing and where they are
+* The students learn how to build their Client apps based on learning about **routes**.
+* Clients talk to the server using the HTTP GET protocol (*communication rules*)
 
 
-## Mocean and Steps
+## Steps
+
+There is another built-in game called **Steps** that is simpler. **Steps** and **Mocean** use the same 
+*ip address*. Look at the file `StepsClient.py` to see how this simple game works. 
 
 
-There are actually two games: **Steps** and **Mocean**. They use the same *ip address* and *port*. 
-Play either game by formatting a URL to include
-the ip address, port, and route. These are required. Some *routes* require an additional
-key and value; or even multiple key-value pairs. These are of the form `key=value` and they
-are separated in the URL by ampersand characters `&`. 
+## Using a browser
+
+As a shortcut one can use a browser like Chrome as a Client for Mocean or Steps. For example type into
+the browser address bar: **http://52.11.131.9:8080/begin**. That starts the Steps game. To get started
+with Mocean use **http://52.11.131.9:8080/mocean**.
 
 
-You can use a browser as the Client, for example formatting you interactions by typing them in; 
-but the important concept here is to write and use a Python Client to play. 
 
-
-## Client for the Steps game
-
-
-Start with `http://<ip>:8080/begin?message=<some_message>`. The route is `begin` and the key is `message`. 
-Iterate based on responses. Upon solving this puzzle the User is directed to a new route. Change the route and do the
-next challenge. There are five of these. Here is example Client code.  ***Notice you must fix the urlbase variable
-before this code will run!!***
-
-```
-import requests, time
-
-urlbase, route, key = 'http://AAA.BBB.CCC.DDD:PPPP/', 'begin', 'message'
-
-while True:
-    msg = input('msg to send to route `' + route + '`, key `' + key + '`: ')
-    if   msg == 'exit' or msg == 'quit':  break
-    elif msg == 'route': route = input("enter a new route: ")
-    elif msg ==   'key':   key = input("enter a new key: ")
-    else:
-        full_message = urlbase + route + '?' + key + '=' + msg
-        tic = time.time()
-        answer_back = requests.get(full_message).text
-        toc = time.time()
-        print('\nServer response: \n\n' + answer_back + '\n\n' + str(round((toc - tic)*1000., 1)) \
-              + ' milliseconds, URL = ' + urlbase + route + '?' + 'message=' + msg + '\n\n') 
-```
-
-## Mocean ideas
-
-- routes: join, quit, who, sendchat, popchat, ---navigation---
-- issues: handling different latencies... and polling status bits
-
-## Server configuration
-
-### Some notes
+## Rob's Notes
 
 - In what follows I use `PPPP` for the port number. Replace this with 8080.
 - Start up a Server (in our case a cloud instance) and ensure...
