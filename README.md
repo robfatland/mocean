@@ -27,56 +27,55 @@ with Mocean use **http://52.11.131.9:8080/mocean**.
 
 ## Rob's Notes
 
-- Server configuration
-    - On AWS start a VM (in our case a cloud instance) and ensure...
-        - Configuration: += Custom TCP, port 8080, source 0.0.0.0/0
-        - Assign an elastic ip
-    - Login, install miniconda: The single command is...
-    
+### Server configuration
+- On AWS start a VM (in our case a cloud instance) and ensure...
+    - Configuration: += Custom TCP, port 8080, source 0.0.0.0/0
+    - Assign an elastic ip
+- Login, install miniconda: The single command is...
+   
+
 ```
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh && bash miniconda.sh -b -p $HOME/miniconda && export PATH="$HOME/miniconda/bin:$PATH" && conda config --add channels conda-forge --force
 ```
 
-    - Set up a custom environment for **Mocean** using `conda create`, `conda activate`:
-        - Edit `~/.bashrc` and add a line at the end of this file if necessary: 
+
+- Set up a custom environment for **Mocean** using `conda create`, `conda activate`:
+    - Edit `~/.bashrc` and add a line at the end of this file if necessary, then save and run. 
 
 ```
 export PATH="$HOME/miniconda/bin:$PATH"
-```
-
-        - Save and run:
-
-```
 source ~/.bashrc
 ```
 
-        - Check that `python` is indicating a path that includes *miniconda*.
+- Check that `python` is indicating a path that includes *miniconda*.
 
 ```
 which python
 ```
 
-        - should produce something like `/home/ubuntu/minconda/bin/conda`. 
-        - Create an environment that includes the `uwsgi` gateway interface and the bottle web framework: 
+- Should produce something like `/home/ubuntu/minconda/bin/conda`. 
+- Create an environment that includes the `uwsgi` gateway interface and the bottle web framework: 
 
 ```
 conda create -n mocean-env --yes bottle uwsgi
 ```
 
-        - Activate this environment; two methods for this are: 
+- Activate this environment; two methods for this are: 
 
 ```
 conda activate mocean-env
 source activate mocean-env
 ```
-        - Test that uwsgi is executing from the correct (miniconda/bin) location:
+
+- Test that uwsgi is executing from the correct (miniconda/bin) location:
+
 ```
 which uwsgi
 ```
 
-        - Needed: Rationale for the environments, for the explicit path in `.service` and...
-        - ...for why the `.service` file does not actually invoke the mocean-env environment
-    - Create `~/.bash_aliases` file using a leading `m` to connect these shortcuts with `mocean`:
+- Needed: Rationale for the environments, for the explicit path in `.service` and...
+- ...for why the `.service` file does not actually invoke the mocean-env environment
+- Create `~/.bash_aliases` file using a leading `m` to connect these shortcuts with `mocean`:
 
 ```
 alias mstart='sudo systemctl start mocean'
@@ -89,35 +88,39 @@ alias mps='ps -ef | grep mocean'
 alias mkill='sudo kill -9 '
 ```
 
-        - It is considered bad form to interrupt the `systemd` daemon using `kill`...
-            - ...however I resort to this at times...
-            - ...as some `systemctl` tasks don't work smoothly. (they tend to just hang)
-    - Take advantage of the `systemd` by creating a `mocean.service` file 
-        - This and other files referred to are in this repository
-        - Include proper automated restart entries
-        - See [this website](https://ma.ttias.be/auto-restart-crashed-service-systemd/)
-        - This file goes into `/lib/systemd/system/`. 
-        - Since the game is called "mocean" the file will be `mocean.service`. 
-        - An example is in this repository
-        - Stop the service (e.g. `mstop` with `mps` and `mkill` together...) before swapping in a new version
+- It is considered bad form to interrupt the `systemd` daemon using `kill`...
+    - ...however I resort to this at times...
+    - ...as some `systemctl` tasks don't work smoothly. (they tend to just hang)
+- Take advantage of the `systemd` by creating a `mocean.service` file 
+    - This and other files referred to are in this repository
+    - Include proper automated restart entries
+    - See [this website](https://ma.ttias.be/auto-restart-crashed-service-systemd/)
+    - This file goes into `/lib/systemd/system/`. 
+    - Since the game is called "mocean" the file will be `mocean.service`. 
+    - An example is in this repository
+    - Stop the service (e.g. `mstop` with `mps` and `mkill` together...) before swapping in a new version
 
-- Service Bug
-    - Wimpy instance: Timeout/restart every five minutes or so. 
-    - Improved to this from 1 minute by including in `mocean.service`: 
+
+### Service Bug
+
+- Wimpy instance: Timeout/restart every five minutes or so. 
+- Improved to this from 1 minute by including in `mocean.service`: 
 
 ```
 TimeoutSec=7200
 ```
-- Python execution 
-    - The end of the main Python file uses these two lines to engage the bottle web framework
+
+### Python execution 
+
+- The end of the main Python file uses these two lines to engage the bottle web framework
     
 ```
 application = bottle.default_app()
 if __name__ == '__main__': run(app=application, host='0.0.0.0', port=8080, reloader=True)
 ```
 
+- It may be helpful to clear the decks with
 
-    - It may be helpful to clear the decks with
 ```
 sudo systemctl daemon-reload
 ```
