@@ -27,6 +27,22 @@ with Mocean use **http://52.11.131.9:8080/mocean**.
 
 ## Rob's Notes
 
+### Install `requests`
+
+If you have IDLE installed you can access Python and install packages like `requests` which we need for the **Mocean** project.
+
+- Follow online instructions to install Python 3.9 etcetera; which gives you the IDLE development environment.
+- Open a command shell on Windows where you can enter commands. Once you are there:
+- Use the `py` command to invoke Python...
+- ...and follow this with `-m pip install` to run the **pip** package installer...
+- ...and follow this with the name of the package to install: `requests`, as in...
+
+```
+py -m pip install requests
+```
+
+
+
 ### Server configuration
 - On AWS start a VM (in our case a cloud instance) and ensure...
     - Configuration: += Custom TCP, port 8080, source 0.0.0.0/0
