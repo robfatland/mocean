@@ -32,7 +32,9 @@
 # 
 # funny sonar cavitation idea: If speed > max / 2 or something: return random noise for depth
 
-version_string = "V3.14 Boom Edition ...159"
+version_string = "V3.14 Boom Edition ...159265"
+
+# 3.14159265 358979323
 
 # added for application code version:
 import bottle
@@ -246,7 +248,7 @@ whales    = [[randint(0, torew - 1), randint(0, torns - 1), 0] for i in range(nW
 # this is of course a hardcode
 whales[0].append('Anisha')
 whales[1].append('Stephen Jay Gould')
-whales[2].append('Debbie')
+whales[2].append('Debbie Kelley')
 whales[3].append('Herman Melville')
 whales[4].append('Ishmael')
 whales[5].append('Charles Darwin')
@@ -427,7 +429,8 @@ def join():
     name = request.GET.name.strip()
     if not name.isalnum(): return '-1'
     try :    
-        if name in players: return '-1'
+        if name in players: 
+            return str(players.index(name))
         players.append(name) 
         loc.append([randint(startcoord_range_lo, startcoord_range_hi), 
                     randint(startcoord_range_lo, startcoord_range_hi), 
@@ -439,7 +442,7 @@ def join():
         playerinventory.append([['air tank', 'air tank', 1.]])           
         whalerider.append(False)
         inlostcity.append(False)
-    except ValueError as ve: return '-1'
+    except ValueError as ve: return 'failed to join player into the game'
     return str(players.index(name))           
 
 
