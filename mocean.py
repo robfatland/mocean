@@ -20,6 +20,9 @@
 #   ['whale', name of whale]
 #
 # NEXT!
+#   need one virtual player at all times... named Clem
+#     he autoresponds with a not useful information (one attempt only)...  
+#     need a critical condition for the win, and a time pressure mechanism
 #   need more route info outside of the mocean basics
 #   test whalename, treasurename
 #   bug? does a look action cross the edge boundaries properly?
@@ -32,7 +35,7 @@
 # 
 # funny sonar cavitation idea: If speed > max / 2 or something: return random noise for depth
 
-version_string = "V3.14 Boom Edition ...159265"
+version_string = "V3.14 Boom Edition, better pop... 159265!"
 
 # 3.14159265 358979323
 
@@ -331,7 +334,7 @@ def mocean():
     if usage_type == 'brief':
 
         m  += "mocean                 --> this message (this is the brief version)      " + eol
-        m  += "join         name      --> id or '-1' on fail                            " + eol
+        m  += "join         name      --> id string '0', '1', '2', etcetera             " + eol
         m  += "quit         name      --> '1' on success and '0' on fail                " + eol
         m  += "who                    --> there are 2 players: fred wilma               " + eol
         m  += "name         id        --> name of player with this id                   " + eol
@@ -344,6 +347,7 @@ def mocean():
         m  += "location     id        --> x, y, z, wrap flag, message flag, nearby flag " + eol
         m  += "velocity     id        --> vx, vy, heading in radians                    " + eol
         m  += "accel        id, ctrl: use w faster s slower a left d right              " + eol
+        m  += "stop         id        --> stop swimming (velocity goes to 0, 0)         " + eol
         m  += "dive         id, ctrl: use r to rise and f to go deeper                  " + eol
         m  += "teleport     id, x, y: teleport to new location                          " + eol
         m  += "ping         id        --> depth in +meters to sea floor where i am      " + eol
@@ -396,6 +400,8 @@ def mocean():
         m  += "                                                                                  " + eol
         m  += "accel            id          my id                                                " + eol
         m  += "                 ctrl        one of: w a s d           x,y,z,vx,vy,heading        " + eol
+        m  += "                                                                                  " + eol
+        m  += "stop             id          my id                     sets player velocity to 0  " + eol
         m  += "                                                                                  " + eol
         m  += "dive             id          my id                                                " + eol
         m  += "                 ctrl        one of: r f               r = rise, f = down         " + eol
@@ -581,6 +587,7 @@ def treasurename():
             msg += inventoryitem[1] + ' '
     return msg
 
+
 @route('/inventory', method='GET')
 def inventory(): 
     id = int(request.GET.id.strip())
@@ -645,30 +652,28 @@ def sendchat():
                                               # this freezes you while you type out the message
                                               # and it runs whether or not you include the other args
     recipient = request.GET.name.strip()
-    if not recipient in players: return '0'
+    if not recipient in players: return 'player for chat message does not seem to be in the game'
     message   = request.GET.message.strip()
-    if not len(message): return '0'
+    if not len(message): return 'the message was not send: seems to be too short'
 
     recip_id = players.index(recipient)
-    if len(chat[recip_id]): return '0'
+    if len(chat[recip_id]): return 'player has an unread message blocking your message'
     try : 
-        chat[recip_id] = 'sender ' + players[id] + 'says: ' + message
-        return '1'
-    except : return '0' 
-    return '0'
+        chat[recip_id] = 'player ' + players[id] + ' tells you: ' + message
+    except : return 'sendchat failed for an unknown reason'
+    return 'your message is in your recipients inbox waiting to be read'
 
 
 @route('/popchat', method='GET')
 def popchat():
     id        = int(request.GET.id.strip())
     if not idok(id): return 'bad player id; try debugging using the id route'
-    if not len(chat[id]): return '0'
+    if not len(chat[id]): return 'no message in your inbox'
     try : 
         return_message = chat[id]
         chat[id] = ''
-        return return_message
-    except : return '0' 
-    return '0'
+    except : return 'popchat() experienced an unknown error' 
+    return return_message
 
 
 ############################
