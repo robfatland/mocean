@@ -98,12 +98,30 @@ viewshedbinoculars = 100.
 
 
 def calcseamount(i, x, y):
-    '''for a given location calculate the height of seamount[i]'''
+    '''for a given location calculate the height of seamounts[i]'''
     r = sqrt((x - seamounts[i][0])**2 + (y - seamounts[i][1])**2)
     if r > 3.*seamounts[i][2]: return 0.
     return seamounts[i][3]*exp(-.5*(r/seamounts[i][2])**2)
 
-
+def seamountclosestproximity(id):
+    x = loc[id][0]
+    y = loc[id][1]
+    min_distance = torew * torns
+    min_index = -1
+    for i in range(len(seamounts)):
+        a = x - seamounts[i][0]
+        b = y - seamounts[i][1]
+        while a > torew/2: a -= torew
+        while a < -torew/2: a += torew
+        while b > torns/2: b -= torns
+        while b < -torns/2: b += torns
+        c = sqrt(a**2 + b**2)
+        if c < min_distance:
+            min_distance = c
+            min_index = i
+    assert min_index > -1 and min_index < len(seamounts), 'fail in seamountclosestprox()'
+    return min_index
+   
 def intrench(x, y):
     '''bool for whether a location is in the trench or not'''
     for i in range(len(tr)): 
@@ -176,7 +194,6 @@ def playerheading(id):
 def playerspeed(id):       
     '''return player speed as a floating point value'''
     return sqrt(vel[id][0]**2 + vel[id][1]**2)
-
 
 def playerspeedstring(id): 
     '''return player speed as a string'''
@@ -271,7 +288,7 @@ treasures = [[seamounts[i][0], seamounts[i][1], bathymetry(seamounts[i][0], seam
 
 # this is of course a hardcode
 treasures[0].append('fishing net')
-treasures[1].append('spare air')
+treasures[1].append('crash alert')
 treasures[2].append('JSON ROV')
 treasures[3].append('ALVIN submarine')
 treasures[4].append('imaging sonar')
@@ -526,6 +543,7 @@ def get():
         return 'item exception in get route'
 
     # the operational radius of a get depends on whether the player has the boathook treasure
+    # to do this is a ridiculous way of checking whether the player has a boat hook
     radius = boathookradius if not itemindex(id, 'boat hook') < 0 else grabradius
 
     if item == 'treasure':
@@ -535,13 +553,29 @@ def get():
                 treasure_index = treasures.index(treasure)
  
                 # an infinite supply of iron dust: it is not deleted from treasures[]
+                #   to do also a large pile of abandoned 'crash alert' devices
                 if not treasures[treasure_index][1] == 'iron dust':
                     del(treasures[treasure_index])
-                return 'treasure recovered!'
-        return 'no treasure within your reach'
+                got_treasure_msg = 'treasure recovered! '
+                return got_treasure_msg            # to do: Expand this for esach treasure
+                                                   # 
+                                                   # fishing net... 
+                                                   # crash alert
+                                                   # JSON ROV
+                                                   # ALVIN submarine
+                                                   # imaging sonar
+                                                   # teleport crystal
+                                                   # (c-s i) 
+                                                   # binoculars
+                                                   # ham and cheese sandwich
+                                                   # boat hook
+                                                   # iron dust     'iron dust (from a large pile)'
+                                                   # iron dust 
+        return 'there is no treasure within your grasp at the moment'
+
     elif item == 'whale':
         if whalerider[id]: return 'you are already riding a whale'
-        if not plankton_bloom: return 'all the whales are too hungry to play'
+        if not plankton_bloom: return 'all the whales are too hungry to help you'
         for whale in whales:
             if myproximity(id, whale) < radius:
                 whale_index = whales.index(whale)
@@ -550,9 +584,9 @@ def get():
                 del(whales[whale_index])
                 whalerider[id] = True
                 maxspeed[id] = whalespeed
-                return 'you are riding a whale'
-        return 'no whales are within your reach'
-    return 'Did you include an item to get? If so that item is not available'
+                return 'congratulations, you are now riding a whale'
+        return 'there are no whales within your reach at the moment'
+    return 'Did you specify the item you want to get? If so: That item is not available'
 
 @route('/backdoor', method='GET')
 def backdoor(): 
@@ -587,6 +621,17 @@ def treasurename():
             msg += inventoryitem[1] + ' '
     return msg
 
+@route('/seamountname', method='GET')
+def seamountname():
+    '''yields the name of the nearest seamount to player id-string'''
+    # to do: Technically this is not published but available. The official way of 
+    #   getting seamount names is by use applied to treasure crash alert. 
+    id = int(request.GET.id.strip())
+    if not idok(id): return 'bad player id; try debugging using the id route'
+    nearest_index = seamountclosestproximity(id)
+    msg = 'the nearest seamount to you is called ' + seamounts[nearest_index][4]
+    return msg
+
 
 @route('/inventory', method='GET')
 def inventory(): 
@@ -603,7 +648,7 @@ def use():
     item = request.GET.item.strip()
 
     thisindex = itemindex(id, item)
-    if thisindex == -1: return 'player does not have requested item to use'
+    if thisindex == -1: return 'player does not have requested item to use; be sure to spell it as listed in your inventory!'
 
     if item == 'iron dust':
         plankton_bloom = True
@@ -615,27 +660,40 @@ def use():
         msg += '...which is what whales love to eat...\n'
         msg += '...so the whales enjoy a plankton feast...'
         return msg
-    elif item == 'palantir':
-        return "you can see everything in your mind's eye at once..."
-    elif item == 'spare air':
-        return 'with a spare tank of air you can stay down longer'
+    elif item == 'crash alert':
+        closest_index = seamountclosestproximity(id)
+        msg  = 'you look at your crash alert device...\n' 
+        msg  = '...it seems to know about the names of undersea mountains that you are close to...\n'
+        msg += '  it says: Closest seamount to your current location is: \n'
+        msg += '  ' + seamounts[closest_index][4] + '\n'
+        return msg
+    elif item == 'fishing net':
+        return 'catch fish! ...but this treasure is not yet active in the game'
+    elif item == 'boat hook':
+        return 'the boat hook automatically extends your reach for getting things...'
     elif item == 'JSON ROV':
-        return 'you send the ROV down... it can descend to the bottom of the ocean'
+        return 'you can send the ROV down to explore...  but this treasure is not yet active in the game'
     elif item == 'ALVIN submarine':
-        return 'with ALVIN you are able to dive down into the trench' 
+        return 'with ALVIN you are able to explore deep trenches... but this treasure is not yet active in the game'
     elif item == 'map':
-        return 'you read the map; it tells you where the good stuff is...'
+        return 'this treasure is not yet active in the game...'
     elif item == 'teleport crystal':
-        return 'you can now teleport to anywhere in the mocean'
+        return 'the teleport crystal helps you teleport to anywhere in the mocean'
     elif item == 'chrono-synclastic infundibulum':
         return 'as you dissolve into wave-like form you realize you can go anywhere, more or less'
     elif item == 'binoculars':
-        return 'you see off in the distance... a henway!!!'
+        return 'these binoculars are used automatically: They give you the ability to see further off into the distance.'
     elif item == 'ham and cheese sandwich':
-        return 'ah you feel much better, not so hungry and ready for action'
+        return 'ah that was delicious. You feel not so hungry and ready for more action!'
     else:
         return 'there is no way to make use of that item right now'
-    return "requested item not in player's inventory; be sure to use the item's exact name"
+    return "this item is not in your inventory; be sure to use exact spelling"
+
+
+# to do make these treasures give sensible get responses...
+# treasures[4].append('imaging sonar')
+# treasures[6].append('chrono-synclastic infundibulum')
+
 
 ############################
 #
@@ -755,7 +813,7 @@ def accel():
 def stop():
     id = int(request.GET.id.strip())
     if not idok(id): return 'bad player id; try debugging using the id route'
-    vel[id][0], vel[id][1] = 0., 0.
+    vel[id][0], vel[id][1] = 0., 0.        # retains memory of heading ([2])
     return locationstring(id) + ',' + velocitystring(id)
 
 @route('/teleport', method='GET')
