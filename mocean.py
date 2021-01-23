@@ -35,7 +35,7 @@
 # 
 # funny sonar cavitation idea: If speed > max / 2 or something: return random noise for depth
 
-version_string = "V3.14 Boom Edition, better pop... 159265!"
+version_string = "V3.14 Boom Edition, non troppo... 1592653!"
 
 # 3.14159265 358979323
 
