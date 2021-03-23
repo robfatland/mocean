@@ -44,6 +44,7 @@ import bottle
 
 from bottle import request, route, run
 import json
+<<<<<<< Updated upstream
 from math import sqrt, exp, sin, cos
 import math
 from random import randint, random
@@ -78,6 +79,32 @@ nSeamounts = 12
 smx0, smx1, smy0, smy1 = 60, torew - 60 - 1, 60, torns - 60 - 1
 sigma0, sigma1, amp0, amp1 = 10., 30., 10, 15.
 seamounts = [[randint(smx0, smx1), randint(smy0, smy1), sigma0 + random()*sigma1, amp0 + random()*amp1] for i in range(nSeamounts)]
+=======
+from math import sqrt
+from random import randint
+
+# configure global
+players, locs, start_dim, torns, torew = [], [], 200, 400, 600
+
+@route('/mocean', method='GET')
+def mocean(): 
+    msg = "\nbe there swells, let's go a-whalin\n\n")
+    msg += "route       key        value            returns:                          \n")
+    msg += "=======     =======    =======          ===================               \n")
+    msg += "mocean      ----       ----             this usage message                \n")
+    msg += "join        name       player's name    name,num_players,x,y,z            \n")
+    msg += "quit        name       player's name    goodbye msg                       \n")
+    msg += "who         ----       ----             csv list of players               \n")
+    msg += "move        name       player's name                                      \n")
+    msg += "            heading    north ... west   csv new location x,y,z            \n")
+    msg += "dive        name       player's name                                      \n")
+    msg += "            direction  up or down       csv new location x,y,z            \n")
+    msg += "chat        name       player's name                                      \n")
+    msg += "            message    a message        confirm message is on queue       \n")
+    msg += "listen      queue      all or player                                      \n")
+    msg += "            player     player's name                                      \n")
+    return msg
+>>>>>>> Stashed changes
 
 # the trench is defined as five contiguous rectangles
 tr = []
@@ -87,6 +114,7 @@ tr.append([260, 330, 360, 365])
 tr.append([330, 338, 360, 450])
 tr.append([330, 410, 450, 455])
 
+<<<<<<< Updated upstream
 viewshedbase       = 20.
 viewshedbinoculars = 100.
 
@@ -941,4 +969,40 @@ def steps_game_part_5():
 
 application = bottle.default_app()
 if __name__ == '__main__': run(app=application, host='0.0.0.0', port=8080, reloader=True)
+=======
+@route('/join', method='GET')
+def join():
+
+    msg = request.GET.name.strip()
+    if len(msg) == 0: return('player name has zero characters; join failed')
+    try :  players.append(msg); locs.append((randint()*start_dim,randint()*start_dim, 0))
+    except : return("player join fail for some reason")
+    rmsg = players[-1] + ',' + str(len(players)) + ',' + str(locs[-1][0]) + ',' + str(locs[-1][1]) + ',' + str(locs[-1][2])
+    print("                  len(players) = ", len(players))
+    return rmsg
+
+@route('/quit', method='GET')
+def quit():
+    msg = request.GET.name.strip()
+    if not msg in players: return("failed to remove a non-existent player")
+    try: player_index = players.index(msg); del players[player_index]; del locs[player_index]
+    except : return("sorry this player quit did not work for some reason")
+    return ("you have left the toroidal mocean")
+
+@route('/move', method='GET')
+def move():
+    name    = request.GET.name.strip()
+    heading = request.GET.heading.strip()
+    if not name in players: return('fail to move as player name not recognized')
+    player_index = players.index(name)
+    torx, tory, torz = locs[player_index]
+    if   heading == 'north': tory = (tory + 1) % torns
+    elif heading == 'south': tory = (tory - 1) % torns 
+    elif heading == 'east' : torx = (torx + 1) % torew
+    elif heading == 'west' : torx = (torx - 1) % torew 
+    locs[player_index] = (torx, tory, torz)
+    return state(torx, tory, torz)
+
+def state(x, y, z): return str(x) + ',' + str(y) + ',' + str(z)
+>>>>>>> Stashed changes
 
