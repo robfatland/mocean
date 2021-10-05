@@ -1,4 +1,4 @@
-# The ***Mocean*** Python Bytes Team Project 
+# The ***Mocean*** Python Bytes Project 
 
 This project was designed by and for Middle School Python Learners (who as we know are fans of the game *Among Us*). 
 **Mocean** is a Server~Client online game which depends upon the players building their own Client applications.
