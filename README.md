@@ -1,35 +1,40 @@
 # The ***Mocean*** Python Bytes Team Project 
 
-This project was designed by and for Middle School Python Learners. Most of the code was written
-by me. We learn Python motivated by an online game framework. The game is **Mocean**.
+This project was designed by and for Middle School Python Learners (who as we know are fans of the game *Among Us*). 
+**Mocean** is a Server~Client online game which depends upon the players building their own Client applications.
+This is a bit like building your own airplane before you fly it. First we write a Client that can taxi on a 
+runway; and only later do we add wings and a tail...
 
 
-* The game **Mocean** is played on an ocean planet
-* It supports multiple players: Human beings running Client apps
-* There is a single Server on the Internet that knows who is playing and where they are
-* The students learn how to build their Client apps based on learning about **routes**.
-* Clients talk to the server using the HTTP GET protocol (*communication rules*)
+* The game **Mocean** is set on an ocean planet in the shape of a torus 
+* It supports multiple players; so you simply connect and say "join" to join the game
+    * A Server living on the Internet knows who is playing and where they are located
+* Students learn how to build their Client by learning about **routes**
+    * A route is equivalent for our purposes to a command
+* Student Clients talk to the server using the HTTP GET protocol
+    * A protocol is a *rule for how to communicate*
 
 
 ## Steps
 
-There is another built-in game called **Steps** that is simpler. **Steps** and **Mocean** use the same 
-*ip address*. Look at the file `StepsClient.py` to see how this simple game works. 
+
+To get started we have a simpler game running on the same server. This simpler game is called **Steps**.
+You play **Steps** by sending in guesses and reading the Server's response. The Server is giving you hints
+about what to say; so it is a guessing game.
 
 
 ## Using a browser
 
-As a shortcut one can use a browser like Chrome as a Client for Mocean or Steps. For example type into
-the browser address bar: **http://52.11.131.9:8080/begin**. That starts the Steps game. To get started
-with Mocean use **http://52.11.131.9:8080/mocean**.
+
+**http://52.11.131.9:8080/begin** will start **Steps**. Notice this is just a URL, not Python code. 
+This is our first clue that Python is acting like a browser.  Similarly you can see if the **Mocean** 
+game is running or not using **http://52.11.131.9:8080/mocean**.
 
 
 
-## Rob's Notes
+## For Python: You must install `requests`
 
-### Install `requests`
-
-If you have IDLE installed you can access Python and install packages like `requests` which we need for the **Mocean** project.
+If you have IDLE installed you can access Python and install packages like `requests` which we need to play **Mocean**.
 
 - Follow online instructions to install Python 3.9 etcetera; which gives you the IDLE development environment.
 - Open a command shell on Windows where you can enter commands. Once you are there:
@@ -41,13 +46,15 @@ If you have IDLE installed you can access Python and install packages like `requ
 py -m pip install requests
 ```
 
+***Students: From here down you are free to read but you may ignore the rest!***
 
 
-### Server configuration
-- On AWS start a VM (in our case a cloud instance) and ensure...
-    - Configuration: += Custom TCP, port 8080, source 0.0.0.0/0
-    - Assign an elastic ip
-- Login, install miniconda: The single command is...
+## Server setup
+
+- On the cloud start a Virtual Machine
+    - Config on AWS: += Custom TCP, port 8080, source 0.0.0.0/0
+    - Use an elastic ip
+- Login, install miniconda
    
 
 ```
@@ -117,7 +124,7 @@ alias mkill='sudo kill -9 '
     - Stop the service (e.g. `mstop` with `mps` and `mkill` together...) before swapping in a new version
 
 
-### Service Bug
+## Service Bug
 
 - Wimpy instance: Timeout/restart every five minutes or so. 
 - Improved to this from 1 minute by including in `mocean.service`: 
@@ -126,7 +133,7 @@ alias mkill='sudo kill -9 '
 TimeoutSec=7200
 ```
 
-### Python execution 
+## Python execution 
 
 - The end of the main Python file uses these two lines to engage the bottle web framework
     
