@@ -53,6 +53,7 @@ py -m pip install requests
 
 - On the cloud start a Virtual Machine
     - Config on AWS: += Custom TCP, port 8080, source 0.0.0.0/0
+        - If not done during init: Add an inbound rule to the instance's security group with these parameters
     - Use an elastic ip
 - Login, install miniconda
    
