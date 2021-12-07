@@ -81,7 +81,7 @@ Save the file and run it:
 source ~/.bashrc
 ```
 
-- Check that `python` executes from a path that includes *miniconda*.
+Check that `python` executes from a path that includes *miniconda*.
 
 ```
 which python
@@ -106,18 +106,68 @@ Activate this environment; two methods for this are:
 
 ```
 conda activate mocean-env
+```
+
+
+or
+
+```
 source activate mocean-env
 ```
 
-- Test that uwsgi is executing from the correct (miniconda/bin) location:
+
+### Wait! That Did Not Work
+
+I did the **activate** command and received an error: 
+
+```
+ubuntu@ip-172-31-46-86:~$ conda activate mocean-env
+
+CommandNotFoundError: Your shell has not been properly configured to use 'conda activate'.
+To initialize your shell, run
+
+    $ conda init <SHELL_NAME>
+
+Currently supported shells are:
+  - bash
+  ...etcetera...
+```
+
+So I ran 
+
+```
+conda init bash
+```
+
+and without complaint the system informed me that this modified the `.bashrc` file. So I retried `conda activate mocean-env` and this time it worked.
+My cursor changed to reflect that I was *inside* the `mocean-env` environment. 
+
+
+### That sorted, we continue
+
+
+When the environment is active the cursor should change (default behavior) to reflect this. We are now operating in a 
+kind of sub-reality, the environment, where actions taken do not affect the generic bash environment.
+
+
+Next step: Test that uwsgi is executing from the correct (miniconda/bin) location:
 
 ```
 which uwsgi
 ```
 
-- Needed: Rationale for the environments, for the explicit path in `.service` and...
-- ...for why the `.service` file does not actually invoke the mocean-env environment
-- Create `~/.bash_aliases` file using a leading `m` to connect these shortcuts with `mocean`:
+
+Notice this shows a path that includes not only `miniconda` but also the `mocean-env` subdirectory.
+
+
+***In what follows we are setting up a server; including an ability for it to re-start itself
+should it halt. In this process a file called `.service` is referenced. What is needed here is a
+brief explanation; including a 'path' rationale and how the .service file invokes the 
+special mocean-env environment.***
+
+
+Create a new file called `~/.bash_aliases` consisting of the following lines:
+
 
 ```
 alias mstart='sudo systemctl start mocean'
