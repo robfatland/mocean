@@ -63,33 +63,46 @@ wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O mi
 ```
 
 
-This sequence of concatenated commands should install miniconda in one paste.
+This sequence of concatenated commands should install miniconda in one go.
 
 
-Next we set up a custom environment for **Mocean** using `conda create` and `conda activate`. However: The steps are elaborated below so don't just thrash about here...
+Next we set up a custom environment for **Mocean** using `conda create` and `conda activate`. The steps are elaborated at length here; please follow methodically!
 
 
-First: Edit `~/.bashrc` and add a line at the end of this file if necessary, then save and run. 
+First: Edit `~/.bashrc` and add a line at the end of this file: 
 
 ```
 export PATH="$HOME/miniconda/bin:$PATH"
+```
+
+Save the file and run it: 
+
+```
 source ~/.bashrc
 ```
 
-- Check that `python` is indicating a path that includes *miniconda*.
+- Check that `python` executes from a path that includes *miniconda*.
 
 ```
 which python
 ```
 
-- Should produce something like `/home/ubuntu/minconda/bin/conda`. 
-- Create an environment that includes the `uwsgi` gateway interface and the bottle web framework: 
+This should produce something like `/home/ubuntu/minconda/bin/conda`. If not you will need to debug the situation: Why is `conda` running from
+a *non-miniconda* location?
+
+
+Next: Using the `conda` package manager command we create an environment that includes the `uwsgi` gateway interface and the bottle web framework: 
 
 ```
 conda create -n mocean-env --yes bottle uwsgi
 ```
 
-- Activate this environment; two methods for this are: 
+Supposing you accidentally create an *environment* that you decide you want to remove. You do this not using the `conda` command but rather 
+with the related `conda-env` (conda environment) command. To find out what it does you can issue `conda-env -h`. The environment must be 
+deactivated before it can be deleted. The the command is `conda-env remove -n environment_i_do_not_want`.
+
+
+Activate this environment; two methods for this are: 
 
 ```
 conda activate mocean-env
