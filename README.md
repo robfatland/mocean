@@ -63,8 +63,13 @@ wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O mi
 ```
 
 
-- Set up a custom environment for **Mocean** using `conda create`, `conda activate`:
-    - Edit `~/.bashrc` and add a line at the end of this file if necessary, then save and run. 
+This sequence of concatenated commands should install miniconda in one paste.
+
+
+Next we set up a custom environment for **Mocean** using `conda create` and `conda activate`. However: The steps are elaborated below so don't just thrash about here...
+
+
+First: Edit `~/.bashrc` and add a line at the end of this file if necessary, then save and run. 
 
 ```
 export PATH="$HOME/miniconda/bin:$PATH"
