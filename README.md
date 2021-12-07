@@ -26,9 +26,9 @@ about what to say; so it is a guessing game.
 ## Using a browser
 
 
-**http://52.11.131.9:8080/begin** will start **Steps**. Notice this is just a URL, not Python code. 
+**http://52.34.243.66:8080/begin** will start **Steps**. Notice this is just a URL, not Python code. 
 This is our first clue that Python is acting like a browser.  Similarly you can see if the **Mocean** 
-game is running or not using **http://52.11.131.9:8080/mocean**.
+game is running or not using **http://52.34.243.66:8080/mocean**.
 
 
 
@@ -68,6 +68,7 @@ This sequence of concatenated commands should install miniconda in one go.
 
 To make certain steps easier create a clone of this repo on your server:
 
+
 ```
 cd ~
 git clone https://github.com/robfatland/mocean.git
@@ -82,6 +83,7 @@ cd ~
 cp mocean/mocean.py .
 chmod a+rx mocean.py
 ```
+
 
 That Python code `mocean.py` is intended to be run on this EC2 instance as a service, using the ***system daemon***. More on this in a bit. 
 
