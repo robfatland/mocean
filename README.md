@@ -55,7 +55,7 @@ py -m pip install requests
     - Config on AWS: += Custom TCP, port 8080, source 0.0.0.0/0
         - If not done during init: Add an inbound rule to the instance's security group with these parameters
     - Use an elastic ip
-- Login, install miniconda
+- Login, install miniconda by copying and pasting the following command...
    
 
 ```
@@ -66,7 +66,27 @@ wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O mi
 This sequence of concatenated commands should install miniconda in one go.
 
 
-Next we set up a custom environment for **Mocean** using `conda create` and `conda activate`. The steps are elaborated at length here; please follow methodically!
+To make certain steps easier create a clone of this repo on your server:
+
+```
+cd ~
+git clone https://github.com/robfatland/mocean.git
+```
+
+You should have a **`mocean`** directory with all these contents therein: In your home directory.
+Copy the file `mocean.py` to your home directory and make sure it is executable.
+
+
+```
+cd ~
+cp mocean/mocean.py .
+chmod a+rx mocean.py
+```
+
+That Python code `mocean.py` is intended to be run on this EC2 instance as a service, using the ***system daemon***. More on this in a bit. 
+
+
+Next we set up a custom environment for **mocean** using `conda create` and `conda activate`. The steps are elaborated at length here; please follow methodically!
 
 
 First: Edit `~/.bashrc` and add a line at the end of this file: 
