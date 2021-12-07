@@ -146,8 +146,9 @@ My cursor changed to reflect that I was *inside* the `mocean-env` environment.
 ### That sorted, we continue
 
 
-When the environment is active the cursor should change (default behavior) to reflect this. We are now operating in a 
-kind of sub-reality, the environment, where actions taken do not affect the generic bash environment.
+When the environment is active the cursor should change (default behavior) to reflect the active environment. 
+We are now operating in a sort of sub-reality (the *mocean-env* environment).
+Actions taken within this environment do not affect the generic bash environment.
 
 
 Next step: Test that uwsgi is executing from the correct (miniconda/bin) location:
@@ -158,6 +159,7 @@ which uwsgi
 
 
 Notice this shows a path that includes not only `miniconda` but also the `mocean-env` subdirectory.
+The sub-directory corresponds to the `mocean-env` environment.
 
 
 ***In what follows we are setting up a server; including an ability for it to re-start itself
@@ -166,21 +168,49 @@ brief explanation; including a 'path' rationale and how the .service file invoke
 special mocean-env environment.***
 
 
-Create a new file called `~/.bash_aliases` consisting of the following lines:
+Create a new file called `~/.bash_aliases` consisting of the aliases shown below. The alias names
+are a bit labored but the idea is to create a little custom vocabulary consistent with the 'mocean'
+frame of mind.
 
 
 ```
-alias mstart='sudo systemctl start mocean'
-alias mstop='sudo systemctl stop mocean'
-alias mrestart='sudo systemctl restart mocean'
-alias mstatus='sudo systemctl status mocean'
-alias mdaemon='sudo systemctl daemon-reload'
-alias mjournal='journalctl -xe'
-alias mps='ps -ef | grep mocean'
-alias mkill='sudo kill -9 '
+alias mocean_start='sudo systemctl start mocean'
+alias mocean_stop='sudo systemctl stop mocean'
+alias mocean_restart='sudo systemctl restart mocean'
+alias mocean_status='sudo systemctl status mocean'
+alias mocean_daemon='sudo systemctl daemon-reload'
+alias mocean_journal='journalctl -xe'
+alias mocean_ps='ps -ef | grep mocean'
+alias mocean_kill='sudo kill -9 '
 ```
 
-- It is considered bad form to interrupt the `systemd` daemon using `kill`...
+When I execute `source .bashrc` this strangely de-activates the `mocean-env` environment. 
+Once I reactivate the `mocean-env` environment
+these aliases exist; so hopefully they work as desired.
+
+
+### **`systemd`** service creation
+
+
+We now want to follow some sort of directions ([example site](https://www.shubhamdipt.com/blog/how-to-create-a-systemd-service-in-linux/))
+to create a service that runs automatically on startup and re-starts itself should it halt for some reason. 
+
+
+In the home directory edit a file called `mocean.service`.
+
+
+```
+cd /etc/systemd/system
+```
+
+
+
+
+
+### Closing notes
+
+
+- It is bad form to interrupt the `systemd` daemon using `kill`...
     - ...however I resort to this at times...
     - ...as some `systemctl` tasks don't work smoothly. (they tend to just hang)
 - Take advantage of the `systemd` by creating a `mocean.service` file 
@@ -196,7 +226,7 @@ alias mkill='sudo kill -9 '
 ## Service Bug
 
 - Wimpy instance: Timeout/restart every five minutes or so. 
-- Improved to this from 1 minute by including in `mocean.service`: 
+- Improved from 1 minute by including in `mocean.service`: 
 
 ```
 TimeoutSec=7200
