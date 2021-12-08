@@ -190,12 +190,19 @@ brief explanation; including a 'path' rationale and how the .service file invoke
 special mocean-env environment.***
 
 
+***What is needed in the operational procedure is a way of debugging server halts: Why do they happen?***
+
+
+***What is needed in the code is a state file that can be reloaded on restart to pick up where the game left off***
+
+
 Create a new file called `~/.bash_aliases` consisting of the aliases shown below. The alias names
 are a bit labored but the idea is to create a little custom vocabulary consistent with the 'mocean'
 frame of mind.
 
 
 ```
+alias mocean_activate='conda activate mocean-env'
 alias mocean_start='sudo systemctl start mocean'
 alias mocean_stop='sudo systemctl stop mocean'
 alias mocean_restart='sudo systemctl restart mocean'
