@@ -185,11 +185,15 @@ Currently supported shells are:
   ...etcetera...
 ```
 
-> Solution: Run
+> ***Solution***
+
+Run this command:
+
 
 ```
 conda init bash
 ```
+
 
 Note that once a Python environment is activated this is reflected in the cursor prompt.
 
@@ -204,7 +208,7 @@ which uwsgi
 ```
 
 
-- Edit a local copy of a file called `steps.service` as follows:
+- Edit a file called `steps.service` in the ubuntu home directory to read as follows:
 
 
 ```
@@ -236,14 +240,19 @@ sudo cp steps.service /etc/systemd/system
 - Ensure that the `steps.py` program above is present and executable in the home directory of the `ubuntu` user
 
 
+#### Debugging
 
 
+The Linux VM maintains a journal of events recorded by the system daemon. Read this journal by issuing the command 
 
+```
+journalctl -xe
+```
 
-***In what follows we are setting up a server; including an ability for it to re-start itself
-should it halt. In this process a file called `.service` is referenced. What is needed here is a
-brief explanation; including a 'path' rationale and how the .service file invokes the 
-special mocean-env environment.***
+Here, after the steps game has been played, we should find diagnostic printouts from the `steps.py` program.
+Below in the section **How to play cloud steps** is a description of how to verify that inbound Client requests 
+align with journal entries printed by the steps game.
+
 
 
 ***What is needed in the operational procedure is a way of debugging server halts: Why do they happen?***
@@ -275,7 +284,22 @@ conda create -n steps-env --yes bottle uwsgi
 #### Version 1: Playing **steps** using your browser
 
 
-In your browser address bar type **http://52.34.243.66:8080/steps**.
+In your browser address bar type **`http://52.34.243.66:8080/steps`**.
+
+
+To verify your browser URL against the system daemon journal, add a key-value
+to your browser URL: **`http://52.34.243.66:8080/steps?message=hello wurlde`**.
+Now in the bash shell of the cloud VM issue
+
+
+```
+journalctl -xe
+```
+
+
+The output should include a line **`Server received message: hello wurlde`**. This is a means of determining whether 
+the Client inbound message to the Server is arriving as intended.
+
 
 
 #### Version 2: Playing **steps** using Python
