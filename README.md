@@ -111,12 +111,57 @@ wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O mi
 This sequence of concatenated commands should install miniconda in one go.
 
 
+- Install `requests` and `bottle`
+
+
+```
+pip install requests
+pip install bottle
+```
+
+
+- Edit a local copy of a file called `steps.service` as follows:
+
+
+```
+[Unit]
+Description=Operate steps game
+
+[Service]
+Type=simple
+Restart=on-failure
+RestartSec=5s
+TimeoutSec=7200
+User=ubuntu
+WorkingDirectory=/home/ubuntu/
+ExecStart=/bin/bash -c '/home/ubuntu/miniconda/envs/mocean-env/bin/uwsgi --http :8080 --wsgi-file /home/ubuntu/steps.
+py --master'
+
+[Install]
+WantedBy=multi-user.target
+```
+
+
+- Copy this file to the directory `/etc/systemd/system`
+
+
+```
+sudo cp steps.service /etc/systemd/system
+```
+
+
+- Ensure that the `steps.py` program given above is in the home directory of the `ubuntu` user
+
+
+
 ### How to play **cloud steps**
 
 
 #### Version 1: Playing **steps** using your browser
 
+
 In your browser address bar type **http://52.34.243.66:8080/steps**.
+
 
 #### Version 2: Playing **steps** using Python
 
@@ -126,9 +171,12 @@ In your browser address bar type **http://52.34.243.66:8080/steps**.
 
 ## Advanced cloud steps
 
+
 ### How to play advanced **cloud steps**
 
+
 ## Mocean
+
 
 The game **Mocean** is set on an ocean planet in the shape of a torus. 
 It supports multiple players. You join the game and begin exploring.
