@@ -40,11 +40,11 @@ python -m pip install requests
 python -m pip install bottle
 ```
 
-* Create a file `steps.py` resembling this:
+* Create a file `steps.py` like this:
 
 ```
-import bottle, json
-from bottle import request, route, run
+import json
+from bottle import request, route, run, default_app
 
 # '@route' is a decorator that assigns the 'steps' a function 'steps_game()'
 
@@ -56,7 +56,7 @@ def steps_game():
     except :                   return('This message will never be printed')
     return 'welcome to the rudimentary steps game'
 
-application = bottle.default_app()
+application = default_app()
 run(host='0.0.0.0', port=8080, reloader=True)
 ```
 
@@ -92,13 +92,15 @@ This should produce text output `welcome to the rudimentary steps game`.
 
 ### Server setup
 
-Our goal here is to set up a cloud virtual machine that does just what the above version of **`steps`** does.
+Our goal here is to set up a cloud virtual machine that does just what the above version of **`steps`** does. It will
+include two additional elements: The use of the Linux system daemon and 
 
 
 - On the cloud start a Virtual Machine
     - On AWS: += Custom TCP, port 8080, source 0.0.0.0/0
         - If this is not done during initialization of the instance: 
-            - Add an inbound rule to the instance's Security Group with these same three parameters: Custom TCP, port 8080, source 0.0.0.0/0
+            - Add an inbound rule to the instance's Security Group
+                - Use the same three parameters: Custom TCP, port 8080, source 0.0.0.0/0
         - Use an elastic ip to ensure your server will always appear at the same URL
 - Log in to your VM and install miniconda by copying and pasting:
    
@@ -151,6 +153,35 @@ sudo cp steps.service /etc/systemd/system
 
 
 - Ensure that the `steps.py` program given above is in the home directory of the `ubuntu` user
+- Optional: Create some aliases to run common commands as follows:
+
+
+```
+alias Sactivate='conda activate steps-env'
+alias Sstart='sudo systemctl start steps'
+alias Sstop='sudo systemctl stop steps'
+alias Srestart='sudo systemctl restart steps'
+alias Sstatus='sudo systemctl status steps'
+alias Sdaemon='sudo systemctl daemon-reload'
+alias Sjournal='journalctl -xe'
+alias Sps='ps -ef | grep steps'
+alias Skill='sudo kill -9 '
+alias Saliases='alias | grep S'
+alias Salias='alias | grep S'
+alias Sedit='vi ~/.bash_aliases'
+alias Sbash='source ~/.bash_aliases'
+```
+
+
+- Create a `steps` environment within Python
+
+```
+conda create -n steps-env --yes bottle uwsgi
+```
+
+
+
+
 
 
 
