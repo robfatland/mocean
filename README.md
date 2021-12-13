@@ -57,10 +57,14 @@ def steps_game():
     return 'welcome to the rudimentary steps game'
 
 application = default_app()
-run(host='0.0.0.0', port=8080, reloader=True)
+if __name__ == '__main__': run(host='0.0.0.0', port=8080, reloader=True)
 ```
 
-* Run this Python program
+The last two lines of this file are key to operating correctly both here and
+in the expanded context of a cloud-based Server VM.
+
+
+* Run the `steps.py` Python program
 
 
 ```
@@ -79,12 +83,10 @@ Hit Ctrl-C to quit.
 
 ### How to play **steps**
 
-* Open a browser and in the address bar type in `http://localhost:8080/steps`
 
-
-This should produce text output `welcome to the rudimentary steps game`.
-
-
+- Open a browser and in the address bar type in `http://localhost:8080/steps`
+    - This should produce text output `welcome to the rudimentary steps game`
+- You can include additional information by typing in `http://localhost:8080/steps?message=hello fellow sentients`
 
 
 ## Cloud steps
@@ -93,7 +95,12 @@ This should produce text output `welcome to the rudimentary steps game`.
 ### Server setup
 
 Our goal here is to set up a cloud virtual machine that does just what the above version of **`steps`** does. It will
-include two additional elements: The use of the Linux system daemon and 
+include additional elements: The [Linux system daemon](https://en.wikipedia.org/wiki/Systemd), 
+a specialized [Python environment](https://towardsdatascience.com/virtual-environments-104c62d48c54), 
+and more extensive use of the
+[`bottle` Python web framework](https://bottlepy.org/docs/dev/). 
+Explaining how these work is outside the scope of this cookbook approach but there is
+a wealth of information online.
 
 
 - On the cloud start a Virtual Machine
