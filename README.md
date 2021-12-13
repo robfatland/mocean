@@ -1,10 +1,23 @@
 # The ***Mocean*** Python Bytes Project 
 
-This project was designed by and for Middle School Python Learners (who as we know are fans of the game *Among Us*). 
-**Mocean** is a Server~Client online game which depends upon the players building their own Client applications.
-This is a bit like building your own airplane before you fly it. First we write a Client that can taxi on a 
-runway; and only later do we add wings and a tail...
+This project was designed around a club for Middle School Python Learners (fans of the game *Among Us*). 
+**Mocean** is a reasonably complicated Server~Client online game. The idea is the students build their own
+Client application to play. However this project also has relevance to creating things like data services
+for research. We proceed as follows:
 
+- Create a minimal service on a local machine: A very simple dialog
+- Create the same service on a cloud VM
+- Extend the functionality a bit further to create a simple text game
+- ...and further to a multi-player online game
+- Build out a data service
+
+
+
+
+
+
+
+# Residual text from first iteration
 
 * The game **Mocean** is set on an ocean planet in the shape of a torus 
 * It supports multiple players; so you simply connect and say "join" to join the game
