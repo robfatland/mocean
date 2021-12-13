@@ -1,4 +1,4 @@
-# The ***Mocean*** Python Bytes Project 
+# The ***Mocean*** project 
 
 This project was designed around a club for Middle School Python Learners (fans of the game *Among Us*). 
 There are two "games" involved, one called **Steps** and one called **Mocean**. 
@@ -15,10 +15,10 @@ for research.
 We proceed as follows:
 
 
-- Create a minimal service on a local machine: A very simple dialog, precursor to the **Steps** game
+- Create a minimal service on a local machine: A very simple dialog, precursor to the **steps** game
 - Create the same service on a cloud VM
-- Extend the functionality a bit further to create a simple text game
-- ...and further to a multi-player online game
+- Extend the functionality a bit further to complete the **steps** game
+- Build a variant of this, the multi-player online game **mocean** 
 - Build out a data service
 
 
@@ -78,50 +78,20 @@ This should produce text output `welcome to the rudimentary steps game`.
 
 
 
-# Residual text from first iteration
-
-* The game **Mocean** is set on an ocean planet in the shape of a torus 
-* It supports multiple players; so you simply connect and say "join" to join the game
-    * A Server living on the Internet knows who is playing and where they are located
-* Students learn how to build their Client by learning about **routes**
-    * A route is equivalent for our purposes to a command
-* Student Clients talk to the server using the HTTP GET protocol
-    * A protocol is a *rule for how to communicate*
+## Cloud steps
 
 
+### Server setup
 
+Our goal here is to set up a cloud virtual machine that does just what the above version of **`steps`** does.
 
-
-## Using a browser
-
-
-**http://52.34.243.66:8080/steps** will start the **steps** game. This is a URL, not Python code. 
-Python will eventually be substituted for the browser address bar.
-
-
-
-## For Python: You must install `requests`
-
-If you have IDLE installed you can access Python and install packages like `requests` which we need to play **Mocean**.
-
-- Follow online instructions to install Python 3.9 etcetera; which gives you the IDLE development environment.
-- Open a command shell on Windows where you can enter commands. Once you are there:
-- Use the `py` command to invoke Python...
-- ...and follow this with `-m pip install` to run the **pip** package installer...
-- ...and follow this with the name of the package to install: `requests`, as in...
-
-```
-py -m pip install requests
-```
-
-
-## Server setup
 
 - On the cloud start a Virtual Machine
-    - Config on AWS: += Custom TCP, port 8080, source 0.0.0.0/0
-        - If not done during init: Add an inbound rule to the instance's security group with these parameters
-    - Use an elastic ip
-- Login, install miniconda by copying and pasting the following command...
+    - On AWS: += Custom TCP, port 8080, source 0.0.0.0/0
+        - If this is not done during initialization of the instance: 
+            - Add an inbound rule to the instance's Security Group with these same three parameters: Custom TCP, port 8080, source 0.0.0.0/0
+        - Use an elastic ip to ensure your server will always appear at the same URL
+- Log in to your VM and install miniconda by copying and pasting:
    
 
 ```
@@ -130,6 +100,36 @@ wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O mi
 
 
 This sequence of concatenated commands should install miniconda in one go.
+
+
+### How to play **cloud steps**
+
+
+#### Version 1: Playing **steps** using your browser
+
+In your browser address bar type **http://52.34.243.66:8080/steps**.
+
+#### Version 2: Playing **steps** using Python
+
+
+- As noted above you must have both Python 3 and the `requests` library installed.
+
+
+## Advanced cloud steps
+
+### How to play advanced **cloud steps**
+
+## Mocean
+
+The game **Mocean** is set on an ocean planet in the shape of a torus. 
+It supports multiple players. You join the game and begin exploring.
+The Server keeps track of where you are on the ocean planet.
+You will need to build your own game Client. It will talk to the Server
+using various **routes** as commands. 
+All of this relies on a communication protocol (rulebook) called **`HTTP GET`**.
+
+
+
 
 
 To make certain steps easier create a clone of this repo on your server:
