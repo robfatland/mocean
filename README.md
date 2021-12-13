@@ -26,9 +26,8 @@ about what to say; so it is a guessing game.
 ## Using a browser
 
 
-**http://52.34.243.66:8080/begin** will start **Steps**. Notice this is just a URL, not Python code. 
-This is our first clue that Python is acting like a browser.  Similarly you can see if the **Mocean** 
-game is running or not using **http://52.34.243.66:8080/mocean**.
+**http://52.34.243.66:8080/steps** will start the **steps** game. This is a URL, not Python code. 
+Python will eventually be substituted for the browser address bar.
 
 
 
@@ -45,8 +44,6 @@ If you have IDLE installed you can access Python and install packages like `requ
 ```
 py -m pip install requests
 ```
-
-***Students: From here down you are free to read but you may ignore the rest!***
 
 
 ## Server setup
