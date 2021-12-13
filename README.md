@@ -151,7 +151,7 @@ conda create -n steps-env --yes bottle uwsgi
 
 Supposing you accidentally create an *environment* that you decide you want to remove. You do this not using the `conda` command but rather 
 with the related `conda-env` (conda environment) command. To find out what it does you can issue `conda-env -h`. The environment must be 
-deactivated before it can be deleted. The the command is `conda-env remove -n steps-env`.
+deactivated before it can be deleted. The the command is `conda-env remove -n steps-env`. List the conda environments with `conda-env list`.
 
 
 Activate this environment; two methods for this are: 
@@ -203,6 +203,8 @@ My cursor changed to reflect that I was *inside* the `steps-env` environment.
 
 ```
 which uwsgi
+
+/home/ubuntu/miniconda/envs/steps-env/bin/uwsgi
 ```
 
 
@@ -220,8 +222,7 @@ RestartSec=5s
 TimeoutSec=7200
 User=ubuntu
 WorkingDirectory=/home/ubuntu/
-ExecStart=/bin/bash -c '/home/ubuntu/miniconda/envs/steps-env/bin/uwsgi --http :8080 --wsgi-file /home/ubuntu/steps.
-py --master'
+ExecStart=/bin/bash -c '/home/ubuntu/miniconda/envs/steps-env/bin/uwsgi --http :8080 --wsgi-file /home/ubuntu/steps.py --master'
 
 [Install]
 WantedBy=multi-user.target
