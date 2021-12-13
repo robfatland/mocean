@@ -152,8 +152,8 @@ sudo cp steps.service /etc/systemd/system
 ```
 
 
-- Ensure that the `steps.py` program given above is in the home directory of the `ubuntu` user
-- Optional: Create some aliases to run common commands as follows:
+- Ensure that the `steps.py` program above is present and executable in the home directory of the `ubuntu` user
+- Optional: Create some aliases to run common commands as follows. I prepend 'S' for 'steps'.
 
 
 ```
@@ -166,86 +166,10 @@ alias Sdaemon='sudo systemctl daemon-reload'
 alias Sjournal='journalctl -xe'
 alias Sps='ps -ef | grep steps'
 alias Skill='sudo kill -9 '
-alias Saliases='alias | grep S'
-alias Salias='alias | grep S'
-alias Sedit='vi ~/.bash_aliases'
-alias Sbash='source ~/.bash_aliases'
 ```
 
 
-- Create a `steps` environment within Python
-
-```
-conda create -n steps-env --yes bottle uwsgi
-```
-
-
-
-
-
-
-
-### How to play **cloud steps**
-
-
-#### Version 1: Playing **steps** using your browser
-
-
-In your browser address bar type **http://52.34.243.66:8080/steps**.
-
-
-#### Version 2: Playing **steps** using Python
-
-
-- As noted above you must have both Python 3 and the `requests` library installed.
-
-
-## Advanced cloud steps
-
-
-### How to play advanced **cloud steps**
-
-
-## Mocean
-
-
-The game **Mocean** is set on an ocean planet in the shape of a torus. 
-It supports multiple players. You join the game and begin exploring.
-The Server keeps track of where you are on the ocean planet.
-You will need to build your own game Client. It will talk to the Server
-using various **routes** as commands. 
-All of this relies on a communication protocol (rulebook) called **`HTTP GET`**.
-
-
-
-
-
-To make certain steps easier create a clone of this repo on your server:
-
-
-```
-cd ~
-git clone https://github.com/robfatland/mocean.git
-```
-
-You should have a **`mocean`** directory with all these contents therein: In your home directory.
-Copy the file `mocean.py` to your home directory and make sure it is executable.
-
-
-```
-cd ~
-cp mocean/mocean.py .
-chmod a+rx mocean.py
-```
-
-
-That Python code `mocean.py` is intended to be run on this EC2 instance as a service, using the ***system daemon***. More on this in a bit. 
-
-
-Next we set up a custom environment for **mocean** using `conda create` and `conda activate`. The steps are elaborated at length here; please follow methodically!
-
-
-First: Edit `~/.bashrc` and add a line at the end of this file: 
+- Edit `~/.bashrc` and add a line at the end of this file: 
 
 ```
 export PATH="$HOME/miniconda/bin:$PATH"
@@ -267,7 +191,7 @@ This should produce something like `/home/ubuntu/minconda/bin/conda`. If not you
 a *non-miniconda* location?
 
 
-Next: Using the `conda` package manager command we create an environment that includes the `uwsgi` gateway interface and the bottle web framework: 
+- Use the `conda` package manager command we create an environment that includes the `uwsgi` gateway interface and the bottle web framework: 
 
 ```
 conda create -n mocean-env --yes bottle uwsgi
@@ -348,6 +272,86 @@ special mocean-env environment.***
 
 
 ***What is needed in the code is a state file that can be reloaded on restart to pick up where the game left off***
+
+
+
+
+
+
+
+- Create a `steps` environment within Python
+
+```
+conda create -n steps-env --yes bottle uwsgi
+```
+
+
+
+
+
+
+
+### How to play **cloud steps**
+
+
+#### Version 1: Playing **steps** using your browser
+
+
+In your browser address bar type **http://52.34.243.66:8080/steps**.
+
+
+#### Version 2: Playing **steps** using Python
+
+
+- As noted above you must have both Python 3 and the `requests` library installed.
+
+
+## Advanced cloud steps
+
+
+### How to play advanced **cloud steps**
+
+
+## Mocean
+
+
+The game **Mocean** is set on an ocean planet in the shape of a torus. 
+It supports multiple players. You join the game and begin exploring.
+The Server keeps track of where you are on the ocean planet.
+You will need to build your own game Client. It will talk to the Server
+using various **routes** as commands. 
+All of this relies on a communication protocol (rulebook) called **`HTTP GET`**.
+
+
+
+
+
+To make certain steps easier create a clone of this repo on your server:
+
+
+```
+cd ~
+git clone https://github.com/robfatland/mocean.git
+```
+
+You should have a **`mocean`** directory with all these contents therein: In your home directory.
+Copy the file `mocean.py` to your home directory and make sure it is executable.
+
+
+```
+cd ~
+cp mocean/mocean.py .
+chmod a+rx mocean.py
+```
+
+
+That Python code `mocean.py` is intended to be run on this EC2 instance as a service, using the ***system daemon***. More on this in a bit. 
+
+
+Next we set up a custom environment for **mocean** using `conda create` and `conda activate`. The steps are elaborated at length here; please follow methodically!
+
+
+First: 
 
 
 Create a new file called `~/.bash_aliases` consisting of the aliases shown below. The alias names
