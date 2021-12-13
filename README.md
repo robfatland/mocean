@@ -1,18 +1,79 @@
 # The ***Mocean*** Python Bytes Project 
 
 This project was designed around a club for Middle School Python Learners (fans of the game *Among Us*). 
-**Mocean** is a reasonably complicated Server~Client online game. The idea is the students build their own
-Client application to play. However this project also has relevance to creating things like data services
-for research. We proceed as follows:
+There are two "games" involved, one called **Steps** and one called **Mocean**. 
+**Steps** is a simple interactive text game.
+**Mocean** is a more complicated Server~Client online game that supports multiple players exploring
+a 'world' in competition with one another. The idea is for the students to build their own
+Client applications to play this game. 
 
-- Create a minimal service on a local machine: A very simple dialog
+
+This project has a lot in common with creating data services
+for research. 
+
+
+We proceed as follows:
+
+
+- Create a minimal service on a local machine: A very simple dialog, precursor to the **Steps** game
 - Create the same service on a cloud VM
 - Extend the functionality a bit further to create a simple text game
 - ...and further to a multi-player online game
 - Build out a data service
 
 
+## First **Steps**
 
+
+* Install Python 3 and the `requests` package
+
+```
+python -m pip install requests
+```
+
+* Create a file `steps.py` resembling this:
+
+```
+import bottle, json
+from bottle import request, route, run
+
+# '@route' is a decorator that assigns the 'steps' a function 'steps_game()'
+
+@route('/steps', method='GET')
+def steps_game():
+    msg = request.GET.message.strip()
+    print("          Server received message:", msg)
+    try :                      True
+    except :                   return('This message will never be printed')
+    return 'welcome to the rudimentary steps game'
+
+application = bottle.default_app()
+run(host='0.0.0.0', port=8080, reloader=True)
+```
+
+* Run this Python program
+
+
+```
+python steps.py
+```
+
+
+This provides a run-time response like:
+
+
+```
+Bottle v0.12.19 server starting up (using WSGIRefServer())...
+Listening on http://0.0.0.0:8080/
+Hit Ctrl-C to quit.
+```
+
+### How to play **steps**
+
+* Open a browser and in the address bar type in `http://localhost:8080/steps`
+
+
+This should produce text output `welcome to the rudimentary steps game`.
 
 
 
@@ -28,12 +89,7 @@ for research. We proceed as follows:
     * A protocol is a *rule for how to communicate*
 
 
-## Steps
 
-
-To get started we have a simpler game running on the same server. This simpler game is called **Steps**.
-You play **Steps** by sending in guesses and reading the Server's response. The Server is giving you hints
-about what to say; so it is a guessing game.
 
 
 ## Using a browser
