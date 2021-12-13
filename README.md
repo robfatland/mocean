@@ -169,10 +169,7 @@ or
 source activate steps-env
 ```
 
-#### Uh oh! Fail!!!
-
-
-On the **activate** step I received an error: 
+> ***Possible Fail Point: Error on `activate` of `steps-env`*** 
 
 
 ```
@@ -188,14 +185,13 @@ Currently supported shells are:
   ...etcetera...
 ```
 
-So I ran 
+> Solution: Run
 
 ```
 conda init bash
 ```
 
-and without complaint the system informed me that this modified the `.bashrc` file. So I retried `conda activate steps-env` and this time it worked.
-My cursor changed to reflect that I was *inside* the `steps-env` environment. 
+Note that once a Python environment is activated this is reflected in the cursor prompt.
 
 
 - From within the `steps-env` environment: Test that uwsgi is executing from the correct (miniconda/bin) location:
