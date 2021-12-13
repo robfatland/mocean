@@ -24,11 +24,16 @@ We proceed as follows:
 
 ## First **Steps**
 
+This creates and runs the **steps** server on your own computer. It is very simple because we simply run
+a single Python file. In later versions we will complicate things by using the Linux system daemon as a 
+sort of *minder* that runs (and re-starts) the Python program. 
 
-* Install Python 3 and the `requests` package
+
+* Install Python 3 and the `requests` and `bottle` packages
 
 ```
 python -m pip install requests
+python -m pip install bottle
 ```
 
 * Create a file `steps.py` resembling this:
