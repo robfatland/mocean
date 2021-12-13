@@ -113,69 +113,13 @@ wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O mi
 This sequence of concatenated commands should install miniconda in one go.
 
 
-- Install `requests` and `bottle`
-
-
-```
-pip install requests
-pip install bottle
-```
-
-
-- Edit a local copy of a file called `steps.service` as follows:
-
-
-```
-[Unit]
-Description=Operate steps game
-
-[Service]
-Type=simple
-Restart=on-failure
-RestartSec=5s
-TimeoutSec=7200
-User=ubuntu
-WorkingDirectory=/home/ubuntu/
-ExecStart=/bin/bash -c '/home/ubuntu/miniconda/envs/mocean-env/bin/uwsgi --http :8080 --wsgi-file /home/ubuntu/steps.
-py --master'
-
-[Install]
-WantedBy=multi-user.target
-```
-
-
-- Copy this file to the directory `/etc/systemd/system`
-
-
-```
-sudo cp steps.service /etc/systemd/system
-```
-
-
-- Ensure that the `steps.py` program above is present and executable in the home directory of the `ubuntu` user
-- Optional: Create some aliases to run common commands as follows. I prepend 'S' for 'steps'.
-
-
-```
-alias Sactivate='conda activate steps-env'
-alias Sstart='sudo systemctl start steps'
-alias Sstop='sudo systemctl stop steps'
-alias Srestart='sudo systemctl restart steps'
-alias Sstatus='sudo systemctl status steps'
-alias Sdaemon='sudo systemctl daemon-reload'
-alias Sjournal='journalctl -xe'
-alias Sps='ps -ef | grep steps'
-alias Skill='sudo kill -9 '
-```
-
-
 - Edit `~/.bashrc` and add a line at the end of this file: 
 
 ```
 export PATH="$HOME/miniconda/bin:$PATH"
 ```
 
-Save the file and run it: 
+Save and run:
 
 ```
 source ~/.bashrc
@@ -187,41 +131,52 @@ Check that `python` executes from a path that includes *miniconda*.
 which python
 ```
 
-This should produce something like `/home/ubuntu/minconda/bin/conda`. If not you will need to debug the situation: Why is `conda` running from
-a *non-miniconda* location?
+This should produce `/home/ubuntu/minconda/bin/conda`. If not: Debug!
 
 
-- Use the `conda` package manager command we create an environment that includes the `uwsgi` gateway interface and the bottle web framework: 
+- Install `requests` and `bottle`
+
 
 ```
-conda create -n mocean-env --yes bottle uwsgi
+pip install requests
+pip install bottle
+```
+
+
+- Use the `conda` package manager to create an environment that includes the `uwsgi` gateway interface and the bottle web framework
+
+```
+conda create -n steps-env --yes bottle uwsgi
 ```
 
 Supposing you accidentally create an *environment* that you decide you want to remove. You do this not using the `conda` command but rather 
 with the related `conda-env` (conda environment) command. To find out what it does you can issue `conda-env -h`. The environment must be 
-deactivated before it can be deleted. The the command is `conda-env remove -n environment_i_do_not_want`.
+deactivated before it can be deleted. The the command is `conda-env remove -n steps-env`.
 
 
 Activate this environment; two methods for this are: 
 
+
 ```
-conda activate mocean-env
+conda activate steps-env
 ```
 
 
 or
 
-```
-source activate mocean-env
-```
-
-
-### Wait! That Did Not Work
-
-I did the **activate** command and received an error: 
 
 ```
-ubuntu@ip-172-31-46-86:~$ conda activate mocean-env
+source activate steps-env
+```
+
+#### Uh oh! Fail!!!
+
+
+On the **activate** step I received an error: 
+
+
+```
+ubuntu@ip-172-31-46-86:~$ conda activate steps-env
 
 CommandNotFoundError: Your shell has not been properly configured to use 'conda activate'.
 To initialize your shell, run
@@ -239,27 +194,53 @@ So I ran
 conda init bash
 ```
 
-and without complaint the system informed me that this modified the `.bashrc` file. So I retried `conda activate mocean-env` and this time it worked.
-My cursor changed to reflect that I was *inside* the `mocean-env` environment. 
+and without complaint the system informed me that this modified the `.bashrc` file. So I retried `conda activate steps-env` and this time it worked.
+My cursor changed to reflect that I was *inside* the `steps-env` environment. 
 
 
-### That sorted, we continue
+- From within the `steps-env` environment: Test that uwsgi is executing from the correct (miniconda/bin) location:
 
-
-When the environment is active the cursor should change (default behavior) to reflect the active environment. 
-We are now operating in a sort of sub-reality (the *mocean-env* environment).
-Actions taken within this environment do not affect the generic bash environment.
-
-
-Next step: Test that uwsgi is executing from the correct (miniconda/bin) location:
 
 ```
 which uwsgi
 ```
 
 
-Notice this shows a path that includes not only `miniconda` but also the `mocean-env` subdirectory.
-The sub-directory corresponds to the `mocean-env` environment.
+- Edit a local copy of a file called `steps.service` as follows:
+
+
+```
+[Unit]
+Description=Operate steps game
+
+[Service]
+Type=simple
+Restart=on-failure
+RestartSec=5s
+TimeoutSec=7200
+User=ubuntu
+WorkingDirectory=/home/ubuntu/
+ExecStart=/bin/bash -c '/home/ubuntu/miniconda/envs/steps-env/bin/uwsgi --http :8080 --wsgi-file /home/ubuntu/steps.
+py --master'
+
+[Install]
+WantedBy=multi-user.target
+```
+
+
+- Copy this file to the directory `/etc/systemd/system`
+
+
+```
+sudo cp steps.service /etc/systemd/system
+```
+
+
+- Ensure that the `steps.py` program above is present and executable in the home directory of the `ubuntu` user
+
+
+
+
 
 
 ***In what follows we are setting up a server; including an ability for it to re-start itself
