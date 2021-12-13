@@ -25,8 +25,12 @@ We proceed as follows:
 ## First **Steps**
 
 This creates and runs the **steps** server on your own computer. It is very simple because we simply run
-a single Python file. In later versions we will complicate things by using the Linux system daemon as a 
-sort of *minder* that runs (and re-starts) the Python program. 
+a single Python file to create the local Server. Then we use our browser as a local Client of this Server.
+In later versions of **steps** we will complicate things by using the Linux system daemon as a 
+sort of *minder* that runs (and re-starts) the Python program. For the moment, however, we can
+see what is going on as 'a running Python program that listens and responds' (the Server) and a
+separate program, a web browser, i.e. a Client, that pokes the Server with a simple message and
+receives a reply. 
 
 
 * Install Python 3 and the `requests` and `bottle` packages
