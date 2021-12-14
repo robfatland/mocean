@@ -119,14 +119,17 @@ wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O mi
 ```
 
 
-This sequence of concatenated commands should install miniconda in one go.
+This sequence of concatenated commands should install miniconda in one go. The next step ensures that `miniconda` will
+have precedence in finding various executables (`python`, `conda` etc).
 
 
 - Edit `~/.bashrc` and add a line at the end of this file: 
 
+
 ```
 export PATH="$HOME/miniconda/bin:$PATH"
 ```
+
 
 Save and run:
 
@@ -151,16 +154,22 @@ pip install requests
 pip install bottle
 ```
 
+> ***Warning: Do not install these libraries inside the environment you create below. There they can get wires
+> crossed with the bottle/uwsgi message handling, causing the service we are building to not run.
+
 
 - Use the `conda` package manager to create an environment that includes the `uwsgi` gateway interface and the bottle web framework
+
 
 ```
 conda create -n steps-env --yes bottle uwsgi
 ```
 
-Supposing you accidentally create an *environment* that you decide you want to remove. You do this not using the `conda` command but rather 
-with the related `conda-env` (conda environment) command. To find out what it does you can issue `conda-env -h`. The environment must be 
-deactivated before it can be deleted. The the command is `conda-env remove -n steps-env`. List the conda environments with `conda-env list`.
+
+> ***Supposing you accidentally create an *environment* that you decide you want to remove. You do this not using the `conda` 
+> command but rather with the related `conda-env` (conda environment) command. To find out what it does you can issue 
+> `conda-env -h`. The environment must be deactivated before it can be deleted. The the command is `conda-env remove -n steps-env`. 
+> List the conda environments with `conda-env list`. List packages installed therein with `conda list -n steps-env`.***
 
 
 Activate this environment; two methods for this are: 
