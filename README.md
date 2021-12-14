@@ -104,12 +104,14 @@ a wealth of information online.
 
 
 - On the cloud start a Virtual Machine
-    - On AWS: += Custom TCP, port 8080, source 0.0.0.0/0
-        - If this is not done during initialization of the instance: 
-            - Add an inbound rule to the instance's Security Group
-                - Use the same three parameters: Custom TCP, port 8080, source 0.0.0.0/0
-        - Use an elastic ip to ensure your server will always appear at the same URL
-- Log in to your VM and install miniconda by copying and pasting:
+    - On AWS
+        - += Custom TCP, port 8080, source 0.0.0.0/0
+            - If this is not done during initialization of the instance: 
+                - Add an inbound rule to the instance's Security Group
+                    - Use the same three parameters: Custom TCP, port 8080, source 0.0.0.0/0
+            - Use an elastic ip to ensure your server will always appear at the same URL
+        - For detailed notes on AWS EC2 launch see [this link](https://github.com/cloudbank-project/burnop/blob/main/aws-ec2-start-stop.md)
+- Log in to your VM and install miniconda by copying and pasting this text:
    
 
 ```
