@@ -235,6 +235,10 @@ ExecStart=/bin/bash -c '/home/ubuntu/miniconda/envs/steps-env/bin/uwsgi --http :
 WantedBy=multi-user.target
 ```
 
+> An earlier version of this file set `Type=forking`. This seems to work but the `start` command never returns.
+> [This stack overflow exchange](https://unix.stackexchange.com/questions/308311/systemd-service-runs-without-exiting)
+> recommended `Type=simple`.
+
 
 - Copy this file to the directory `/etc/systemd/system`
 
