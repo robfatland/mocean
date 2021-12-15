@@ -85,8 +85,9 @@ Hit Ctrl-C to quit.
 
 
 - Open a browser and in the address bar type in `http://localhost:8080/steps`
-    - This should produce text output `welcome to the rudimentary steps game`
+    - This should produce text output `welcome! You sent the steps game the message: '
 - You can include additional information by typing in `http://localhost:8080/steps?message=hello fellow sentients`
+    - This should produce text output `welcome! You sent the steps game the message: hello fellow sentients'
 
 
 #### Play **steps** using Python code
@@ -99,7 +100,7 @@ import requests
 print(requests.get('http://localhost:8080/steps?message=1.12 fred johnson').content.decode('utf-8'))
 ```
 
-Suppose we save it as **`local_steps_client.py`**: The run command is 
+Suppose this is saved as **`local_steps_client.py`**. The run command is then
 
 ```
 python local_steps_client.py
