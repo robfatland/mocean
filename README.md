@@ -54,7 +54,7 @@ def steps_game():
     print("          Server received message:", msg)
     try :                      True
     except :                   return('This message will never be printed')
-    return 'welcome to the rudimentary steps game'
+    return 'welcome! You sent the steps game the message: ' + msg
 
 application = default_app()
 if __name__ == '__main__': run(host='0.0.0.0', port=8080, reloader=True)
@@ -64,7 +64,7 @@ The last two lines of this file are key to operating correctly both here and
 in the expanded context of a cloud-based Server VM.
 
 
-* Run the `steps.py` Python program
+* Run `steps.py`
 
 
 ```
@@ -248,7 +248,7 @@ WantedBy=multi-user.target
 
 > An earlier version of this file set `Type=forking`. This seems to work but the `start` command never returns.
 > [This stack overflow exchange](https://unix.stackexchange.com/questions/308311/systemd-service-runs-without-exiting)
-> recommended `Type=simple`.
+> recommends `Type=simple`.
 
 
 - Copy this file to the directory `/etc/systemd/system`
