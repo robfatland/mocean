@@ -123,7 +123,9 @@ a specialized [Python environment](https://towardsdatascience.com/virtual-enviro
 and more extensive use of the
 [`bottle` Python web framework](https://bottlepy.org/docs/dev/). 
 Explaining how these work is outside the scope of this cookbook approach but there is
-a wealth of information online.
+a wealth of information online. As an example 
+[this digital ocean article](https://www.digitalocean.com/community/tutorials/how-to-use-systemctl-to-manage-systemd-services-and-units)
+describes Linux system service management in some detail.
 
 
 - On the cloud start a Virtual Machine
@@ -283,6 +285,26 @@ sudo cp steps.service /etc/systemd/system
 
 
 - Ensure that the `steps.py` program above is present and executable in the home directory of the `ubuntu` user
+
+
+#### Auto-start
+
+
+Once you are satisfied that the service is working properly you can configure it to auto-start whenever the
+VM reboots. The command for this is:
+
+
+```
+sudo systemctl enable steps.service
+```
+
+
+To undo this: 
+
+
+```
+sudo systemctl disable steps.service
+```
 
 
 #### Debugging
