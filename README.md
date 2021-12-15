@@ -89,6 +89,25 @@ Hit Ctrl-C to quit.
 - You can include additional information by typing in `http://localhost:8080/steps?message=hello fellow sentients`
 
 
+#### Play **steps** using Python code
+
+Create this simple Python program and run it. 
+
+
+```
+import requests
+print(requests.get('http://localhost:8080/steps?message=1.12 fred johnson').content.decode('utf-8'))
+```
+
+Suppose we save it as **`local_steps_client.py`**: The run command is 
+
+```
+python local_steps_client.py
+```
+
+The test is whether it reports back the message we sent, the text string `1.12 fred johnson`. 
+
+
 ## Cloud steps
 
 
