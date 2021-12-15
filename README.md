@@ -83,6 +83,8 @@ Hit Ctrl-C to quit.
 
 ### How to play **steps**
 
+#### Play **steps** using a browser
+
 
 - Open a browser and in the address bar type in `http://localhost:8080/steps`
     - This should produce text output `welcome! You sent the steps game the message: '
@@ -91,6 +93,7 @@ Hit Ctrl-C to quit.
 
 
 #### Play **steps** using Python code
+
 
 Create this simple Python program and run it. 
 
@@ -291,39 +294,40 @@ The Linux VM maintains a journal of events recorded by the system daemon. Read t
 journalctl -xe
 ```
 
-Here, after the steps game has been played, we should find diagnostic printouts from the `steps.py` program.
+Here, after the steps game has been played, we should find the results of diagnostic print statements 
+from the `steps.py` program.
 Below in the section **How to play cloud steps** is a description of how to verify that inbound Client requests 
 align with journal entries printed by the steps game.
 
 
 
-***What is needed in the operational procedure is a way of debugging server halts: Why do they happen?***
+If the steps service is not working, test it locally by running a Python script. Here is the example code 
+given above in this walk-through: 
 
-
-***What is needed in the code is a state file that can be reloaded on restart to pick up where the game left off***
-
-
-
-
-
-
-
-- Create a `steps` environment within Python
 
 ```
-conda create -n steps-env --yes bottle uwsgi
+import requests
+print(requests.get('http://localhost:8080/steps?message=1.12 fred johnson').content.decode('utf-8'))
 ```
 
 
+Use `journalctl -xe` to verify that the service ran. If it did not: There is a problem with the system daemon
+running the Python program `steps.py`. Use `ps -ef | grep steps` to be sure that the service is running. There
+are typically three `uwsgi` processes running.
 
 
+If the **steps** service is running and responding on the cloud VM, the next step is to verify that the
+service is working over the internet as well. Use the browser method described below under **cloud steps > browser**.
+
+
+Once the browser approach is verified, try the Python approach described below, **cloud steps > Python**.
 
 
 
 ### How to play **cloud steps**
 
 
-#### Version 1: Playing **steps** using your browser
+#### **cloud steps > browser**
 
 
 In your browser address bar type **`http://52.34.243.66:8080/steps`**.
@@ -344,10 +348,18 @@ the Client inbound message to the Server is arriving as intended.
 
 
 
-#### Version 2: Playing **steps** using Python
+#### **cloud steps > Python**
 
 
 - As noted above you must have both Python 3 and the `requests` library installed.
+- The idea is for this code to run from your local machine 
+    - Let's suppose the elastic IP address is 123.123.123.123
+
+```
+import requests
+print(requests.get('http://123.123.123.123:8080/steps?message=from Python to cloud steps').content.decode('utf-8'))
+```
+
 
 
 ## Advanced cloud steps
