@@ -46,7 +46,7 @@ python -m pip install bottle
 import json
 from bottle import request, route, run, default_app
 
-# '@route' is a decorator that assigns the 'steps' a function 'steps_game()'
+# '@route' is a decorator that assigns the 'steps' route a function 'steps_game()'
 
 @route('/steps', method='GET')
 def steps_game():
