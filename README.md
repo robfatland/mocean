@@ -361,6 +361,26 @@ print(requests.get('http://123.123.123.123:8080/steps?message=from Python to clo
 ```
 
 
+Here is a slightly more involved Python program that tests the steps game and provides the time of
+execution in milliseconds.
+
+
+```
+import requests
+import time
+
+def stepscaller(s): 
+    return requests.get('http://52.34.243.66:8080/steps?message=' + str(s)).text
+
+toc = time.time()
+steps_response = stepscaller(16)
+tic = time.time()
+
+print(steps_response)
+print('milliseconds:', 1000.*(tic-toc))
+```
+
+
 
 ## Advanced cloud steps
 
