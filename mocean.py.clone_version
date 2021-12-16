@@ -1,4 +1,43 @@
-version_string = "V3.14 Caprice Edition non troppo"
+# Two ways to run Mocean Server: sudo systemctl and python (see alias file)
+#     - bottle/uwsgi environment is mocean-env: conda info --envs
+#     - conda activate mocean-env; and note 'run' at end of mocean.py works both
+#
+# Lists (not tuples) for state variables (mutable)
+#   Joined player has a name and index (spoofing possible!) 
+#     players[]:  a list of strings. Quit player has namestring set to ''
+#     loc[] list of coordinate lists: [x, y, z]
+#     vel[] list of velocity lists: [vx, vy, heading_radians]
+#     chat[]: a list of strings: chat messages, one per player
+#     lastloctime[]: a list of time-of-last-location request
+#         ...used to calculate new position according to distance = speed x time
+#
+# notes
+# ids are immediately converted to integers here for use as index into player stats
+# speed is reduced when you dive unless you are riding a whale
+# all playerinventory items are lists that begin with the type of the item, then the specific name, then other metadata
+#   ['air tank', 'air tank', 1.] so [2] is how much air remains
+#   ['treasure', name of treasure]
+#   ['whale', name of whale]
+#
+# NEXT!
+#   need one virtual player at all times... named Clem
+#     he autoresponds with a not useful information (one attempt only)...  
+#     need a critical condition for the win, and a time pressure mechanism
+#   need more route info outside of the mocean basics
+#   test whalename, treasurename
+#   bug? does a look action cross the edge boundaries properly?
+#   bug? I have yet to complete the look route by including a scan for players
+#   should communication with other players only be possible if in sight? 
+# 
+# DOCUMENTATION
+#   when is it necessary to use global? plankton_bloom had to have this... but vel and players and loc lists do not...
+#   use of a list of lists required [[]] for the initialization of air tank so that subsequent treasure appends works
+# 
+# funny sonar cavitation idea: If speed > max / 2 or something: return random noise for depth
+
+version_string = "V3.14 Boom Edition, non troppo... 1592653!"
+
+# 3.14159265 358979323
 
 # added for application code version:
 import bottle

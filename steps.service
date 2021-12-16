@@ -1,0 +1,14 @@
+[Unit]
+Description=Operate steps game
+
+[Service]
+Type=simple
+Restart=on-failure
+RestartSec=5s
+TimeoutSec=7200
+User=ubuntu
+WorkingDirectory=/home/ubuntu/
+ExecStart=/bin/bash -c '/home/ubuntu/miniconda/envs/steps-env/bin/uwsgi --http :8080 --wsgi-file /home/ubuntu/steps.py --master'
+
+[Install]
+WantedBy=multi-user.target
