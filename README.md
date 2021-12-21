@@ -439,9 +439,48 @@ print('milliseconds:', 1000.*(tic-toc))
 
 (placeholder)
 
-### Earlier notes
+
+## Supporting Concepts and Procedures
+
+### Create an AMI
+
+
+If the VM is expensive and not doing very much: It would be ideal to reduce it in capacity to match its load. 
+On the AWS console go to the EC2 dashboard and select the (stopped) instance. Under the Actions drop down
+follow the path to **Create Image**. This is a simple one-page wizard that will create an image of the 
+instance in a matter of ten minutes or so. On AWS this image is called an **AMI** for **Amazon Machine Image**.
+It can be used to launch new instances ***that do not have to be the same machine type***. This is how one
+can reduce the daily cost of running the service: Use an AMI to migrate the service to a cheaper, lower-power
+VM.
+
+
+Upon creating the AMI: Start a new VM from it. Test the new VM to verify it behaves properly.
+
+
+- Go to the AWS console: Compute Services: EC2 dashboard: Launch instance
+- The wizard page 1 presents four image pool options on the left sidebar: Choose **My AMIs**
+    - This should show the AMI you created. Check the selected Regions if an AMI is not apparent.
+- Go through the rest of the launch procedure as usual
+    - Choose a (possibly cheaper) instance on page two of the wizard
+    - Notice that the root volume size will match that of the saved AMI
+    - Notice that tab 6 **Configure Security Group** is an opportunity to set up the communication port
+        - See the section above on building a cloud VM version of **steps**
+        - The specific details: Using the **Add rule** button: Include a Custom TCP with port = 8080 and source = 0.0.0.0/0 
+- Once the instance is tested out there are two details to modify
+    - The original instance had an elastic ip associated; so either re-associate or get a new elastic ip for this instance
+    - The original instance ID was saved in the start / stop Lambda function environment variables
+        - Since there are two Lambda functions: Both must have their environment variables modified to reflect the new instance
+- If you have moved to the new instance on a permanent basis and have no further use for the original
+    - The original is a candidate for termination once you are absolutely certain that this is a safe step
+        - Terminate the instance
+        - Delete any residual associated resources (Security Group, Internet Gateway, EBS volumes)
+
+
+# Residual notes
+
 
 - What is **`HTTP GET`**? What are service **`routes`**?
+- Need a complete list of all the ripples from an EC2
 - Ideal to describe various interrupt / restart mechanisms (`systemctl` and so on)
 - Aliases for frequently used commands
 - GitHub clone and commit recipes, push on a regular basis (`git clone https://github.com/robfatland/mocean.git`)
