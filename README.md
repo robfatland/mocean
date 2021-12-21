@@ -20,6 +20,8 @@ technologies:
 - (miniconda) python installation plus packages and environments
 - on-demand EC2 instances (virtual machines) on AWS; including making and using AMIs
 - using both a browser and Python code as a Client of a web Service
+- transferring a service from a cheap VM ($0.30/hour) to a ***very*** cheap VM ($0.01/hour) to save money
+
 
 Development sequence:
 
