@@ -11,8 +11,15 @@ Client applications to play this game.
 
 
 This project has a lot in common with creating data services
-for research. For this reason it extends to a data service example. 
+for research. For this reason this document extends beyond installing 
+the games to include a data service example. It also touches on related/supporting
+technologies:
 
+- use of the **`bottle`** web framework and the underlying **`uwsgi`** hosting service framework
+- notes on debugging 
+- (miniconda) python installation plus packages and environments
+- on-demand EC2 instances (virtual machines) on AWS; including making and using AMIs
+- using both a browser and Python code as a Client of a web Service
 
 Development sequence:
 
@@ -426,124 +433,25 @@ print('milliseconds:', 1000.*(tic-toc))
 
 ## Mocean
 
+(placeholder)
 
-The game **Mocean** is set on an ocean planet in the shape of a torus. 
-It supports multiple players. You join the game and begin exploring.
-The Server keeps track of where you are on the ocean planet.
-You will need to build your own game Client. It will talk to the Server
-using various **routes** as commands. 
-All of this relies on a communication protocol (rulebook) called **`HTTP GET`**.
+## Data Service
 
+(placeholder)
 
+### Earlier notes
 
-
-
-To make certain steps easier create a clone of this repo on your server:
-
-
-```
-cd ~
-git clone https://github.com/robfatland/mocean.git
-```
-
-You should have a **`mocean`** directory with all these contents therein: In your home directory.
-Copy the file `mocean.py` to your home directory and make sure it is executable.
-
-
-```
-cd ~
-cp mocean/mocean.py .
-chmod a+rx mocean.py
-```
-
-
-That Python code `mocean.py` is intended to be run on this EC2 instance as a service, using the ***system daemon***. More on this in a bit. 
-
-
-Next we set up a custom environment for **mocean** using `conda create` and `conda activate`. The steps are elaborated at length here; please follow methodically!
-
-
-First: 
-
-
-Create a new file called `~/.bash_aliases` consisting of the aliases shown below. The alias names
-are a bit labored but the idea is to create a little custom vocabulary consistent with the 'mocean'
-frame of mind.
-
-
-```
-alias mocean_activate='conda activate mocean-env'
-alias mocean_start='sudo systemctl start mocean'
-alias mocean_stop='sudo systemctl stop mocean'
-alias mocean_restart='sudo systemctl restart mocean'
-alias mocean_status='sudo systemctl status mocean'
-alias mocean_daemon='sudo systemctl daemon-reload'
-alias mocean_journal='journalctl -xe'
-alias mocean_ps='ps -ef | grep mocean'
-alias mocean_kill='sudo kill -9 '
-```
-
-When I execute `source .bashrc` this strangely de-activates the `mocean-env` environment. 
-Once I reactivate the `mocean-env` environment
-these aliases exist; so hopefully they work as desired.
-
-
-### **`systemd`** service creation
-
-
-We now want to follow some sort of directions ([example site](https://www.shubhamdipt.com/blog/how-to-create-a-systemd-service-in-linux/))
-to create a service that runs automatically on startup and re-starts itself should it halt for some reason. 
-
-
-In the home directory edit a file called `mocean.service`.
-
-
-```
-cd /etc/systemd/system
-```
-
-
-
-
-
-### Closing notes
-
-
-- It is bad form to interrupt the `systemd` daemon using `kill`...
-    - ...however I resort to this at times...
-    - ...as some `systemctl` tasks don't work smoothly. (they tend to just hang)
-- Take advantage of the `systemd` by creating a `mocean.service` file 
-    - This and other files referred to are in this repository
-    - Include proper automated restart entries
-    - See [this website](https://ma.ttias.be/auto-restart-crashed-service-systemd/)
-    - This file goes into `/lib/systemd/system/`. 
-    - Since the game is called "mocean" the file will be `mocean.service`. 
-    - An example is in this repository
-    - Stop the service (e.g. `mstop` with `mps` and `mkill` together...) before swapping in a new version
-
-
-## Service Bug
-
-- Wimpy instance: Timeout/restart every five minutes or so. 
-- Improved from 1 minute by including in `mocean.service`: 
-
-```
-TimeoutSec=7200
-```
-
-## Python execution 
-
-- The end of the main Python file uses these two lines to engage the bottle web framework
+- What is **`HTTP GET`**? What are service **`routes`**?
+- Ideal to describe various interrupt / restart mechanisms (`systemctl` and so on)
+- Aliases for frequently used commands
+- GitHub clone and commit recipes, push on a regular basis (`git clone https://github.com/robfatland/mocean.git`)
+- [using `systemd`](https://www.shubhamdipt.com/blog/how-to-create-a-systemd-service-in-linux/)
+- [restarting notes](https://ma.ttias.be/auto-restart-crashed-service-systemd/)
+- Explain what the last two lines of the Client Python programs are doing:
     
 ```
 application = bottle.default_app()
 if __name__ == '__main__': run(app=application, host='0.0.0.0', port=8080, reloader=True)
-```
-
-- It may be helpful to clear the decks with
-
-```
-sudo systemctl daemon-reload
 ```
 
 
