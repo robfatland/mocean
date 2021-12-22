@@ -456,7 +456,28 @@ can reduce the daily cost of running the service: Use an AMI to migrate the serv
 VM.
 
 
-Upon creating the AMI: Start a new VM from it. Test the new VM to verify it behaves properly.
+Upon creating the AMI: Start a new VM from it. Test the new VM to verify it behaves properly. This will
+include logging in to the new VM--which inherits the keypair from the previous VM. Upon connecting from
+a bash shell from your local machine you may well receive a warning like the one below because the new VM
+has its own identity:
+
+**```
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!
+Someone could be eavesdropping on you right now (man-in-the-middle attack)!
+It is also possible that a host key has just been changed.
+The fingerprint for the ECDSA key sent by the remote host is
+SHA256:2o/2xFgfU9RYTPsUq59bHjBiNofLPZBEZDcm7Cu5fVM.
+Please contact your system administrator.
+Add correct host key in /home/kilroy/.ssh/known_hosts to get rid of this message.
+Offending ECDSA key in /home/kilroy/.ssh/known_hosts:33
+  remove with:
+  ssh-keygen -f "/home/kilroy/.ssh/known_hosts" -R "52.34.243.66"
+ECDSA host key for 52.34.243.66 has changed and you have requested strict checking.
+Host key verification failed.
+```**
 
 
 - Go to the AWS console: Compute Services: EC2 dashboard: Launch instance
