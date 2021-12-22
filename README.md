@@ -461,7 +461,7 @@ include logging in to the new VM--which inherits the keypair from the previous V
 a bash shell from your local machine you may well receive a warning like the one below because the new VM
 has its own identity:
 
-**```
+```
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -477,7 +477,7 @@ Offending ECDSA key in /home/kilroy/.ssh/known_hosts:33
   ssh-keygen -f "/home/kilroy/.ssh/known_hosts" -R "52.34.243.66"
 ECDSA host key for 52.34.243.66 has changed and you have requested strict checking.
 Host key verification failed.
-```**
+```
 
 
 - Go to the AWS console: Compute Services: EC2 dashboard: Launch instance
