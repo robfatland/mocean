@@ -456,28 +456,6 @@ can reduce the daily cost of running the service: Use an AMI to migrate the serv
 VM.
 
 
-Upon creating the AMI: Start a new VM from it. Test the new VM to verify it behaves properly. This will
-include logging in to the new VM--which inherits the keypair from the previous VM. Upon connecting from
-a bash shell from your local machine you may well receive a warning like the one below because the new VM
-has its own identity:
-
-```
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!
-Someone could be eavesdropping on you right now (man-in-the-middle attack)!
-It is also possible that a host key has just been changed.
-The fingerprint for the ECDSA key sent by the remote host is
-SHA256:2o/2xFgfU9RYTPsUq59bHjBiNofLPZBEZDcm7Cu5fVM.
-Please contact your system administrator.
-Add correct host key in /home/kilroy/.ssh/known_hosts to get rid of this message.
-Offending ECDSA key in /home/kilroy/.ssh/known_hosts:33
-  remove with:
-  ssh-keygen -f "/home/kilroy/.ssh/known_hosts" -R "52.34.243.66"
-ECDSA host key for 52.34.243.66 has changed and you have requested strict checking.
-Host key verification failed.
-```
 
 
 - Go to the AWS console: Compute Services: EC2 dashboard: Launch instance
@@ -489,6 +467,42 @@ Host key verification failed.
     - Notice that tab 6 **Configure Security Group** is an opportunity to set up the communication port
         - See the section above on building a cloud VM version of **steps**
         - The specific details: Using the **Add rule** button: Include a Custom TCP with port = 8080 and source = 0.0.0.0/0 
+
+
+
+### New VM Security Issue
+
+
+Upon creating the AMI: Start a new VM from it. Test the new VM to verify it behaves properly. This will
+include checking the service (using a browser or Python, for example, as described above). It will also
+include logging in to the new VM. The new VM inherits its access keypair from the AMI, which of course is
+an image of the original / previous VM. Now: At this point we encournter a 'good' problem: There
+is a security alert that arises on your local bash shell when you first attempt to connect to the new VM.
+That is: You may well receive a warning like the one below since the new VM
+has an identity different from the one your bash shell recorded for the original VM. 
+
+
+```
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!
+Someone could be eavesdropping on you right now (man-in-the-middle attack)!
+It is also possible that a host key has just been changed.
+The fingerprint for the ECDSA key sent by the remote host is
+[longfingerprintstringhere]
+Please contact your system administrator.
+Add correct host key in /home/[localdirectory]/.ssh/known_hosts to get rid of this message.
+Offending ECDSA key in /home/[localdirectory]/.ssh/known_hosts:33
+  remove with:
+  ssh-keygen -f "/home/[localdirectory]/.ssh/known_hosts" -R "123.123.123.123"
+ECDSA host key for 123.123.123.123 has changed and you have requested strict checking.
+Host key verification failed.
+```
+
+
+### Finishing new VM set-up
+
 - Once the instance is tested out there are two details to modify
     - The original instance had an elastic ip associated; so either re-associate or get a new elastic ip for this instance
     - The original instance ID was saved in the start / stop Lambda function environment variables
@@ -509,7 +523,7 @@ Host key verification failed.
 - GitHub clone and commit recipes, push on a regular basis (`git clone https://github.com/robfatland/mocean.git`)
 - [using `systemd`](https://www.shubhamdipt.com/blog/how-to-create-a-systemd-service-in-linux/)
 - [restarting notes](https://ma.ttias.be/auto-restart-crashed-service-systemd/)
-- Explain what the last two lines of the Client Python programs are doing:
+- Explain what the last two lines of the Client Python programs are doing:ss
     
 ```
 application = bottle.default_app()
