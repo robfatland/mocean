@@ -501,16 +501,20 @@ Host key verification failed.
 ```
 
 
-### Finishing new VM set-up
+### Finishing a new VM set-up
+
 
 - Once the instance is tested out there are two details to modify
-    - The original instance had an elastic ip associated; so either re-associate or get a new elastic ip for this instance
+    - The original instance had an automatically assigned public ip **and** an elastic ip
+        - We added the elastic ip because it is stable (i.e. it doesn't change every time the VM restarts)
+        - To preserve this behavior we re-associate that elastic ip with the new VM (or associate a new elastic ip)
     - The original instance ID was saved in the start / stop Lambda function environment variables
-        - Since there are two Lambda functions: Both must have their environment variables modified to reflect the new instance
+        - Two Lambda functions: Update the instance ID for **both** in the Lambda configuration tab
+        - The instance id for the new VM can be found in the EC2 dashboard table, format **`i-0123456789abcdef0`**
 - If you have moved to the new instance on a permanent basis and have no further use for the original
     - The original is a candidate for termination once you are absolutely certain that this is a safe step
         - Terminate the instance
-        - Delete any residual associated resources (Security Group, Internet Gateway, EBS volumes)
+        - Delete residual associated resources (Security Group, Internet Gateway, EBS volumes)
 
 
 # Residual notes
