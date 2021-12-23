@@ -1,9 +1,0 @@
-[Unit]
-Description=Job to run the Python pocean.py Server code, in turn to parse HTTP GET API calls
-[Service]
-Type=forking
-Restart=on-failure
-RestartSec=5s
-ExecStart=/bin/bash -c '/home/ubuntu/miniconda/envs/pocean-env/bin/uwsgi --http :8080 --wsgi-file /home/ubuntu/pocean/pocean.py --master'
-[Install]
-WantedBy=multi-user.target
