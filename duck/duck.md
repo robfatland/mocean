@@ -92,7 +92,7 @@ and **r = 50**. They are at the same location. This is an unfortunate outcome fo
 
 How does Duck move? Duck swims in a straight line as fast as possible to **destination**.
 
-# Playing the game Part 3: Sitting Duck
+## Playing the game Part 3: Sitting Duck
 
 If you wish to sit still and allow the Wolf to move: Send the Server a **`location`** but not a **`destination`**. 
 This will result in Duck sitting still for one second while Wolf can move. In one second Wolf will move up to 4 meters.  
