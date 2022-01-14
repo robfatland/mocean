@@ -48,18 +48,50 @@ If we have Duck swim to the edge of the pond and Wolf gets there first we will h
 and **r = 50**. They are at the same location. This is an unfortunate outcome for Duck. 
 
 
-## Playing the game
+## Playing the game part 1: Location
 
 - To play this game use the /duck route: **`http://123.123.123.123:8080/duck`**. 
     - I prefer not to publish the location of the game here
     - Get the correct ip address from Slack, to replace **`123.123.123.123`**. The rest is correct.
 - To get the location of the Duck and the Wolf include **`?location`**
-    - Test this out; the result should always be 0,0,0. These are the values for **r**, **a** and **b**
+    - Test this out; the result should always be **`0,0,90`**. These are the values for **r**, **a** and **b**
+        - **r** =  0: Duck is at the center of the pond
+        - **a** =  0: Duck's direction doesn't really mean anything since she is at the center of the pond
+        - **b** = 90: Wolf direction is 90 degrees: Wolf is on the North side of the pond.
     - You can do this at the start of the game to be sure everything is working ok
-- The Server does not remember who you are or where the Duck is or where the Wolf is
-    - To play the game you must tell the Server where they are
+- The Server does not remember who you are or where the Duck is or where the Wolf is...
+    - To play the game you must tell the Server where they are by providing **r**, **a** and **b**
     - You do this using the same keyword **`location`** but you add in the location information
-        - Suppose the Duck is at distance 40 from the center of the pond, at direction -90
-        - Suppose the Wolf is at direction 0
-        - You would send the Server: **`http://123.123.123.123:8080/duck?location=40,-90,0`**
+        - Suppose the Duck is at distance 40, direction -90. Suppose Wolf is at direction 0.
+        - You would send the Server: **`http://123.123.123.123:8080/duck?location=40.21,-90.00,12.43`**
+        - Telling the Server where the Duck and Wolf are will make more sense below in Part 2
+ - You can pretend to win the game by putting Duck safely at the edge of the pond away from Wolf
+     - This does not count as *actually* winning the game
+
+
+## Playing the game part 2: Moving the Duck
+
+- You move Duck by adding another keyword **destination**. It is separated from **location** by an ampersand character **`&`**.
+- Suppose Duck is at distance **r** = 40. and angle **a** = -90 and you want her to be at **r** = 40 and **a** = -100. Here is what you send:
+    - **`http://123.123.123.123:8080/duck?location=40,-90,12.43&destination=40,-100`**
+    - Let's break this down into parts:
+        - **`http://`** signals we are using the http protocol (rules of communication)
+        - **`123.123.123.123`** is the internet address of the Server for our game
+        - **`:8080`** is the port number on the Server for our game
+        - **`/duck`** is the route. This tells the Server we want to work on the Duck and Wolf puzzle.
+        - **`?`** is a separator. Everything after this separator will be keys and values
+        - **`location=40,-90,12.43`** is the `location` key followed by three values: **r**, **a** and **b** for Duck and Wolf locations
+        - **`&`** is a separator between key/value pairs
+        - **`destination=40,-100`** is the `destination` key followed by three values: **new r** and **new a**. That is where Duck will go next. 
+    - Notice that we are allowed to say where the Duck goes (using `destination`) but we do not get to say where Wolf goes
+        - Wolf's new location is determined by the Server
+        - The Server will reply with `location=40.00,-100.00,-47.22`
+            - Notice Duck has arrived at `destination`: Distance r = 40.00 and angle a = -100.00
+            - Notice Wolf has run around the edge of the pond to get closer to Duck. Wolf is now at angle b = -47.22
+
+
+How does Duck move? Duck swims in a straight line as fast as possible to **destination**.
+
+
+
 
