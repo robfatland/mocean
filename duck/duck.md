@@ -3,12 +3,15 @@
 
 ## The Problem
 
-A certain duck can jump into the air and fly away to safety instantly: Provided she is standing on dry land; 
-but she can not take off from water. Unfortunately she finds herself swimming in a circular pond 
+A certain duck can jump into the air and fly away to safety instantly: Provided she is standing on dry land.
+But she can not take off from water. Unfortunately she finds herself swimming in a circular pond 
 where a wolf (who does not swim) is walking about the perimeter, hungry. The wolf can and does 
 run briskly about the pond four times faster than the swimming duck can swim. 
 That is: If the duck can swim one meter per second then the wolf can run four meters 
-per second. The exact numbers are not important; only the proportion of their speeds
+per second. The exact numbers are not important; only the proportion of their speeds.
+
+
+Is it possible for the Duck to safely swim to the edge of the pond and fly away?
 
 
 ## The Details
@@ -32,7 +35,28 @@ radius = ten meters, it could be radius = 240 meters. Why does it not matter?
 
 
 For game play we will say that the pond has radius 1. Duck's distance from the center of 
-the pond while swimming will be some number $r$ between 0. and 1. 
+the pond while swimming will be some number **r** between 0. and 1.
+
+
+The other important parameter is which *direction* the Duck is relative to the center
+of the pond. We will use a scale of degrees, where East is 0 degrees. North is 90 degrees, 
+South is -90 degrees, and West is 180 degrees (or identically -180 degrees). We will
+refer to the Duck's direction as an angle **a**.
+
+
+The Wolf is always at distance 1.0 from the center of the pond because he cannot swim. 
+
+
+The Wolf's important location parameter is his direction angle **b**. Again this is 0 degrees
+when the Wolf is directly East of the center of the pond, and so on. 
+
+
+Now we can say the state of the pond (the location of the Duck and the Wolf) at any moment 
+in time can be described by three numbers: **r**, **a**, **b**. 
+
+
+If we have Duck swim to the edge of the pond and Wolf gets there first we will have **a** = **b**
+and **r = 1**. This is an unfortunate outcome for Duck. 
 
 
 ## Playing the game
