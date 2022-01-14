@@ -1,3 +1,6 @@
+<img src="https://raw.githubusercontent.com/robfatland/othermathclub/master/images/misc/duck_and_wolf.png" alt="drawing" width="450"/>
+
+
 ## The Problem
 
 A certain duck can jump into the air and fly away to safety instantly: Provided she is standing on dry land; 
