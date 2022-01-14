@@ -61,15 +61,15 @@ and **r = 50**. They are at the same location. This is an unfortunate outcome fo
     - You can do this at the start of the game to be sure everything is working ok
 - The Server does not remember who you are or where the Duck is or where the Wolf is...
     - To play the game you must tell the Server where they are by providing **r**, **a** and **b**
-    - You do this using the same keyword **`location`** but you add in the location information
-        - Suppose the Duck is at distance 40, direction -90. Suppose Wolf is at direction 0.
+    - You do this using the same keyword **`location`** but you add location information:
+        - Suppose the Duck is at distance 40, direction -90. Suppose Wolf is at direction 12.43.
         - You would send the Server: **`http://123.123.123.123:8080/duck?location=40.21,-90.00,12.43`**
         - Telling the Server where the Duck and Wolf are will make more sense below in Part 2
  - You can pretend to win the game by putting Duck safely at the edge of the pond away from Wolf
      - This does not count as *actually* winning the game
 
 
-## Playing the game part 2: Moving the Duck
+## Playing the game part 2: Moving Duck
 
 - You move Duck by adding another keyword **destination**. It is separated from **location** by an ampersand character **`&`**.
 - Suppose Duck is at distance **r** = 40. and angle **a** = -90 and you want her to be at **r** = 40 and **a** = -100. Here is what you send:
@@ -85,13 +85,16 @@ and **r = 50**. They are at the same location. This is an unfortunate outcome fo
         - **`destination=40,-100`** is the `destination` key followed by three values: **new r** and **new a**. That is where Duck will go next. 
     - Notice that we are allowed to say where the Duck goes (using `destination`) but we do not get to say where Wolf goes
         - Wolf's new location is determined by the Server
-        - The Server will reply with `location=40.00,-100.00,-47.22`
+        - The Server will reply with `40.00,-100.00,-47.22`
             - Notice Duck has arrived at `destination`: Distance r = 40.00 and angle a = -100.00
             - Notice Wolf has run around the edge of the pond to get closer to Duck. Wolf is now at angle b = -47.22
 
 
 How does Duck move? Duck swims in a straight line as fast as possible to **destination**.
 
+# Playing the game Part 3: Sitting Duck
 
+If you wish to sit still and allow the Wolf to move: Send the Server a **`location`** but not a **`destination`**. 
+This will result in Duck sitting still for one second while Wolf can move. In one second Wolf will move up to 4 meters.  
 
 
