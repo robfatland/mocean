@@ -1,5 +1,7 @@
 import json
+import re
 from bottle import request, route, run, default_app
+from math import sqrt, cos, sin, pi
 
 lineend = '<br>'
 
@@ -84,6 +86,9 @@ def steps_python():
     r += 'do. Then run it. Then report on slack what it did. Good luck.             ' + lineend
     r += '                                                                          ' + lineend
     r += '                                                                          ' + lineend
+    r += '   (...and if you would like another challenge: try the /duck route...)   ' + lineend
+    r += '                                                                          ' + lineend
+    r += '                                                                          ' + lineend
     r += '                                                                          ' + lineend
     r += 'import requests                                                           ' + lineend
     r += 'from time import time                                                     ' + lineend
@@ -103,6 +108,99 @@ def steps_python():
     r += 'print(reply)                                                              ' + lineend
     r += '                                                                          ' + lineend
     return r
+
+def ParseLocation(locstring):
+
+    loclist = re.split(',|,\s|;|;\s', locstring)   # \s is regex whitespace
+
+    try: 
+        r = float(loclist[0])
+        a = float(loclist[1])
+        b = float(loclist[2])
+    except:
+        r, a, b = 0., 0., 0.
+
+    if r <  0.: r = 0.
+
+    while a <= -180.: a += 360.
+    while a  >  180.: a -= 360.
+    while b <= -180.: b += 360.
+    while b  >  180.: b -= 360.
+
+    return r, a, b,
+
+def ParseDestination(dststring):
+
+    dstlist = re.split(',|,\s|;|;\s', dststring)   # \s is regex whitespace
+    try: 
+        rd = float(dstlist[0])
+        ad = float(dstlist[1])
+    except:
+        rd, ad = 0., 0.
+    if rd <  0.: rd = 0.
+    while ad <= -180.: ad += 360.
+    while ad  >  180.: ad -= 360.
+
+    return rd, ad
+
+@route('/duck', method='GET')
+def steps_duck():
+
+    global lineend
+
+    dtr         = pi/180.
+    rtd         = 180./pi
+    duck_speed  = 1.
+    wolf_speed  = 4.
+    pond_radius = 50.
+
+    location_msg    = request.GET.location
+    destination_msg = request.GET.destination
+    len_loc         = len(re.split(',|,\s|;|;\s', location_msg))
+    len_dst         = len(re.split(',|,\s|;|;\s', destination_msg))
+
+    if len_loc == 0 and len_dst == 0: 
+        msg  = 'location=0,0,0' + lineend + lineend + 'Duck is at the center of the pond' + lineend + lineend
+        msg += 'To read about this game please visit:' + lineend + lineend
+        msg += '        https://github.com/robfatland/mocean/blob/main/duck/duck.md' + lineend + lineend
+    else:
+        if len_loc == 3:
+            r,   a,  b  = ParseLocation(location_msg)
+            if not len_dst == 2: 
+                rd = r
+                ad = a
+                dt = 1.
+            else: 
+                rd, ad         = ParseDestination(destination_msg)
+                a_rad, b_rad   = a*dtr, b*dtr
+                ad_rad         = ad*dtr
+                x0, y0, x1, y1 = r * cos(a_rad), r * sin(a_rad), rd * cos(ad_rad), rd * sin(ad_rad)
+                dt             = sqrt((x0 - x1)**2 + (y0 - y1)**2)/duck_speed
+
+            # distance along perimeter wolf can go
+            wolf_max   = dt*wolf_speed
+            arc        = ad - b                   # arc is angle gap from wolf now to where wolf wants to go
+            while arc <= -180.: arc += 360.
+            while arc >   180.: arc -= 360.       # arc will be in its minimal form
+
+            distance_to_ad = abs(arc*dtr*pond_radius)
+            if distance_to_ad <= wolf_max: bd = ad
+            else: 
+                wolf_angle = (wolf_max / pond_radius) * rtd 
+                if arc < 0.: wolf_angle = -wolf_angle 
+                bd = b + wolf_angle
+
+            msg = str(round(rd,2)) + ',' + str(round(ad,2)) + ',' + str(round(bd,2))
+
+            if rd >= pond_radius:
+                if ad == bd: 
+                    msg += lineend + lineend + 'Wolf has lunch' + lineend + lineend
+                else:
+                    msg += lineend + lineend + 'Duck flies away! (you win)' + lineend + lineend
+
+        else: msg = 'something went wrong'
+
+    return msg
 
 
 application = default_app()
