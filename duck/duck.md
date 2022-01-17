@@ -1,7 +1,14 @@
 <img src="https://raw.githubusercontent.com/robfatland/othermathclub/master/images/misc/duck_and_wolf.png" alt="drawing" width="450"/>
 
+We have been talking about the connection from 'the real world' we live in to the code we write. This project page
+is about two such connections. First we have an interesting puzzle to try to solve, about a duck and a wolf. Second 
+we have the idea of computers talking to one another across vast distances, like hundreds of miles, in a fraction of 
+a second. We have used the **`requests`** Python library to enable this. So read on if you dare! And as always: Let us
+know what you think on Slack!
+
 
 ## The Problem
+
 
 A certain duck can jump into the air and fly away to safety instantly: Provided she is standing on dry land.
 But she can not take off from water. Unfortunately she finds herself swimming in a circular pond 
@@ -17,84 +24,90 @@ Is it possible for the Duck to safely swim to the edge of the pond and fly away?
 ## The Details
 
 
-Duck begins at the center of a circular pond. The pond has a radius of 50 meters.
-Duck swims at a speed of 1 meter per second. Wolf runs at 4 meters per second.
+Duck begins this puzzle at the center of a circular pond. The pond has a radius of 50 meters.
+Wolf is on the East edge of the pond. Duck swims wherever she likes, always at a speed of 
+1 meter per second. Wolf runs around the edge or perimeter of the pond, always at 4 meters per second.
 
 
 Duck wants to fly away but can do so only when she is standing on solid ground.
-Wolf always runs as fast as possible to the point on the perimeter of the pond 
-where Duck would step out. 
+Wolf always runs as fast as possible to
+where Duck would step ashore. Wolf is inimical in this puzzle. 
 
 
-For game play we will say that Duck's location is given by two numbers:
-**r** between 0 and 50 and **a** between -180 and 180. **r** is Duck's 
-distance from the center of the pond in meters. **a** is the direction
-angle. When **a** is 0 degrees that corresponds to East. 
-North is 90 degrees, 
-South is -90 degrees, and West is 180 degrees (or -180 degrees). 
+For game play we will say that Duck's location is given by two numbers, **r** and **a**.
+
+- **`r`** is between 0 and 50: Duck's distance from the center of the pond
+- **`a`** is an angle between -180 and 180 degrees: Duck's compass location (again relative to pond-center) 
+
+
+Zero degrees corresponds to 'East'. 90 degrees is North. -90 degrees is South. 180 degrees is West; so is -180 degrees. 
 
 
 The Wolf is always at distance 50.0 from the center of the pond because he 
-cannot swim. He is on the shore.  Wolf's location is therefore given
-by just his direction angle **b**. Again this is 0 degrees
-when the Wolf is directly East of the center of the pond, and so on. 
+cannot swim. He is on the shore.  Wolf's location is therefore just a direction angle **`b`**. 
+Again this is zero degrees when Wolf is East of the center of the pond. 
 
 
-Now we say the situation, the location of both Duck and the Wolf at any moment 
-in time, can be described by three numbers: **r**, **a**, **b**. 
+Now the situation, the location of Duck and the Wolf at any moment, 
+is described by three numbers: **`r`**, **`a`**, **`b`**: Duck radius, Duck angle, Wolf angle.
 
 
-If we have Duck swim to the edge of the pond and Wolf gets there first we will have **a** = **b**
-and **r = 50**. They are at the same location. This is an unfortunate outcome for Duck. 
+When Duck swims to the edge of the pond (**`r = 50`**): One of two things happen. Either Wolf is 
+there also and Wolf gobbles up Duck; or Wolf is *not* there and Duck flies away safely.
 
 
 ## Playing the game part 1: Location
 
 - To play this game use the /duck route: **`http://123.123.123.123:8080/duck`**. 
-    - I prefer not to publish the location of the game here
-    - Get the correct ip address from Slack, to replace **`123.123.123.123`**. The rest is correct.
+    - Get the correct ip address from Slack to replace **`123.123.123.123`**. The rest is correct.
 - To get the location of the Duck and the Wolf include **`?location`**
-    - Test this out; the result should always be **`0,0,90`**. These are the values for **r**, **a** and **b**
+    - **`http://123.123.123.123:8080/duck?location`** --> **`0,0,0`**. These are **`r`**, **`a`** and **`b`**.
         - **r** =  0: Duck is at the center of the pond
-        - **a** =  0: Duck's direction doesn't really mean anything since she is at the center of the pond
-        - **b** = 90: Wolf direction is 90 degrees: Wolf is on the North side of the pond.
-    - You can do this at the start of the game to be sure everything is working ok
-- The Server does not remember who you are or where the Duck is or where the Wolf is...
-    - To play the game you must tell the Server where they are by providing **r**, **a** and **b**
-    - You do this using the same keyword **`location`** but you add location information:
-        - Suppose the Duck is at distance 40, direction -90. Suppose Wolf is at direction 12.43.
-        - You would send the Server: **`http://123.123.123.123:8080/duck?location=40.21,-90.00,12.43`**
-        - Telling the Server where the Duck and Wolf are will make more sense below in Part 2
- - You can pretend to win the game by putting Duck safely at the edge of the pond away from Wolf
+        - **a** =  0: Duck's direction doesn't really mean anything; but this is 'East'
+        - **b** =  0: Wolf direction is 0 degrees also: Wolf is on the East side of the pond.
+    - Try this in your browser
+- The Server does not remember anything about Duck and Wolf; that is our job
+    - To play the game you first tell the Server where Duck and Wolf are
+    - You also tell the Server where Duck swims to next
+    - Server replies, telling you where Duck is and where Wolf is
+    - You do your part using keyword **`location`** and keyword **`destination`** like so:
+        - Send **`http://123.123.123.123:8080/duck?location=0,0,0&destination=40,90`**
+            - This tells the Server Duck is at the center of the pond
+            - It also tells the Server that Wolf is on the East edge of the pond
+            - You tell the server Duck swims to **`r = 40, a = 90`** (10 meters from the edge of the pond)
+            - The Server replies with **`40, 90, 90`**.
+                - This means that Wolf has run around, is waiting for Duck at the North side of the pond.
+ - Try this: Pretend to win the game by putting Duck safely at the edge of the pond, away from where you put Wolf
      - This does not count as *actually* winning the game
 
 
-## Playing the game part 2: Moving Duck
+## Playing the game part 2: Python
 
-- You move Duck by adding another keyword **destination**. It is separated from **location** by an ampersand character **`&`**.
-- Suppose Duck is at distance **r** = 40. and angle **a** = -90 and you want her to be at **r** = 40 and **a** = -100. Here is what you send:
-    - **`http://123.123.123.123:8080/duck?location=40,-90,12.43&destination=40,-100`**
-    - Let's break this down into parts:
-        - **`http://`** signals we are using the http protocol (rules of communication)
-        - **`123.123.123.123`** is the internet address of the Server for our game
-        - **`:8080`** is the port number on the Server for our game
-        - **`/duck`** is the route. This tells the Server we want to work on the Duck and Wolf puzzle.
-        - **`?`** is a separator. Everything after this separator will be keys and values
-        - **`location=40,-90,12.43`** is the `location` key followed by three values: **r**, **a** and **b** for Duck and Wolf locations
-        - **`&`** is a separator between key/value pairs
-        - **`destination=40,-100`** is the `destination` key followed by three values: **new r** and **new a**. That is where Duck will go next. 
-    - Notice that we are allowed to say where the Duck goes (using `destination`) but we do not get to say where Wolf goes
-        - Wolf's new location is determined by the Server
-        - The Server will reply with `40.00,-100.00,-47.22`
-            - Notice Duck has arrived at `destination`: Distance r = 40.00 and angle a = -100.00
-            - Notice Wolf has run around the edge of the pond to get closer to Duck. Wolf is now at angle b = -47.22
+Let's suppose you want to try some experiments with Duck to see if you can get her safely to the edge of the pond.
+One way to do this is to write a Python program that draws the pond and Duck and Wolf's locations as dots. 
+This Python program then asks the player 'Where does Duck swim to next?' The Player responds; and the Python
+program has a conversation with the Server, like so:
 
 
-How does Duck move? Duck swims in a straight line as fast as possible to **destination**.
+* Python program to Server: "Duck is at **`r, a`** and Wolf is at **`b`**; and Duck swims to **`new_r, new_a`**
+* Server replies to Python: "Duck is now at **`new_r, new_a`** and Wolf is now at **`new_b`**. 
+
+
+The Python program re-draws everything and asks the Player 'Where does Duck swim to next?'
+
+
+This is only one possible way of using a Python program as a **ducks** Client, of course.
+
+
 
 ## Playing the game Part 3: Sitting Duck
 
-If you wish to sit still and allow the Wolf to move: Send the Server a **`location`** but not a **`destination`**. 
-This will result in Duck sitting still for one second while Wolf can move. In one second Wolf will move up to 4 meters.  
+
+How does Duck move? Duck swims in a straight line as fast as possible to her **destination**.
+
+
+If we wish for Duck to sit still (possibly allowing Wolf to move): Send the Server a **`location`** but not a **`destination`**. 
+This will result in Duck sitting still for one second. In this one second Wolf can move up to 4 meters. The Server will of 
+course send back Duck's same location and Wolf's (possibly new) location in reply.
 
 
