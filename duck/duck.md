@@ -111,3 +111,11 @@ This will result in Duck sitting still for one second. In this one second Wolf c
 course send back Duck's same location and Wolf's (possibly new) location in reply.
 
 
+## A Hint
+
+
+If you are the sort of person who likes hints (or perhaps you are stuck on this puzzle): Read on!
+
+
+Of course it *is* possible for the Duck to escape, just barely! The record for the number of **`requests`** to 
+the Server is 212. Is it possible to do better (fewer calls)? 
