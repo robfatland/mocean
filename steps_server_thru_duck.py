@@ -156,20 +156,17 @@ def steps_duck():
 
     location_msg    = request.GET.location
     destination_msg = request.GET.destination
-    len_loc         = len(re.split(',|,\s|;|;\s', location_msg))
-    len_dst         = len(re.split(',|,\s|;|;\s', destination_msg))
+    len_loc         = len(location_msg.split())
+    len_dst         = len(destination_msg.split())
 
     if len_loc == 0 and len_dst == 0: 
         msg  = 'location=0,0,0' + lineend + lineend + 'Duck is at the center of the pond' + lineend + lineend
         msg += 'To read about this game please visit:' + lineend + lineend
         msg += '        https://github.com/robfatland/mocean/blob/main/duck/duck.md' + lineend + lineend
     else:
-        if len_loc == 3:
+        if len(re.split(',|,\s|;|;\s', location_msg)) == 3:
             r,   a,  b  = ParseLocation(location_msg)
-            if not len_dst == 2: 
-                rd = r
-                ad = a
-                dt = 1.
+            if not len(re.split(',|,\s|;|;\s', destination_msg)) == 2: rd, ad, dt = r, a, 1.
             else: 
                 rd, ad         = ParseDestination(destination_msg)
                 a_rad, b_rad   = a*dtr, b*dtr
@@ -198,7 +195,7 @@ def steps_duck():
                 else:
                     msg += lineend + lineend + 'Duck flies away! (you win)' + lineend + lineend
 
-        else: msg = 'something went wrong'
+        else: msg = 'awry: ' + str(len_loc) + '   ' + str(len_dst) + lineend
 
     return msg
 
