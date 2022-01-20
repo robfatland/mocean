@@ -111,11 +111,18 @@ This will result in Duck sitting still for one second. In this one second Wolf c
 course send back Duck's same location and Wolf's (possibly new) location in reply.
 
 
-## A Hint
+## Hints
 
 
 If you are the sort of person who likes hints (or perhaps you are stuck on this puzzle): Read on!
+If you prefer no spoilers, stop here!
 
 
 Of course it *is* possible for the Duck to escape, just barely! The record for the number of **`requests`** to 
-the Server is 212. Is it possible to do better (fewer calls)? 
+the Server is 212. Is it possible to do better than this? To explain this a little bit further: Someone has
+managed to move the Duck 212 times before Duck managed to fly away. Now that is a lot of Duck moves. The 
+first challenge is figuring out how to win. The second challenge is to do this with a minimal number of 
+Duck moves.
+
+
+A simple Duck game Client can be found [at this replit.com page](https://replit.com/@robfatland/duckgameplayer).
