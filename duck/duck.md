@@ -125,4 +125,5 @@ first challenge is figuring out how to win. The second challenge is to do this w
 Duck moves.
 
 
-A simple Duck game Client can be found [at this replit.com page](https://replit.com/@robfatland/duckgameplayer).
+If you are stuck and need help writing Python code to play the Duck game: 
+A simple example for a Duck Game Client can be found [at this replit.com page](https://replit.com/@robfatland/duckgameplayer).
